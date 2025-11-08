@@ -1,0 +1,3 @@
+
+#pragma once
+// Characterize controls

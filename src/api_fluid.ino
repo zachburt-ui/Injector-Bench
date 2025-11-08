@@ -1,0 +1,4 @@
+#include "globals.h"
+static void api_fluid_get(){ StaticJsonDocument<256> d; d["name"]=gFluid.name; d["rho20"]=gFluid.rho20; d["alpha"]=gFluid.alpha; d["rho_custom"]=gFluid.rho_custom; String s; serializeJson(d,s); server.send(200,"application/json",s); }
+static void api_fluid_post(){ String body=readBody(); StaticJsonDocument<256> in; if(deserializeJson(in,body)){ server.send(400,"application/json","{\"ok\":false}"); return; } if(in.containsKey("name")){ String n=in["name"].as<const char*>(); strncpy(gFluid.name,n.c_str(),15);} if(in.containsKey("rho20")) gFluid.rho20=in["rho20"]; if(in.containsKey("alpha")) gFluid.alpha=in["alpha"]; if(in.containsKey("rho_custom")) gFluid.rho_custom=in["rho_custom"]; fluid_save_to_nvs(); server.send(200,"application/json","{\"ok\":true}"); }
+void wireApi_Fluid(){ server.on("/api/fluid", HTTP_GET, api_fluid_get); server.on("/api/fluid", HTTP_POST, api_fluid_post); }

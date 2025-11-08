@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Injector Bench V5</title>
+  <style>
+    :root {
+      --bg:#05070c;
+      --surface:#0c111d;
+      --surface-2:#11192a;
+      --surface-3:#1b2438;
+      --border:#1f2b40;
+      --ink:#e7edff;
+      --muted:#9aa8c7;
+      --accent:#5b7cff;
+      --accent-soft:#314989;
+      --good:#5ad1a5;
+      --warn:#f4a261;
+      --bad:#f37f88;
+      font-family:"Segoe UI", "Inter", "Roboto", sans-serif;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    header {
+      position:sticky;
+      top:0;
+      z-index:5;
+      background:rgba(5,7,12,.92);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar {
+      max-width:1240px;
+      margin:0 auto;
+      padding:16px 20px;
+      display:flex;
+      align-items:center;
+      gap:18px;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+      font-size:20px;
+      letter-spacing:.4px;
+    }
+    .brand .badge {
+      background:linear-gradient(135deg, var(--accent), #8b5bff);
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:1px;
+    }
+    .net-status {
+      margin-left:auto;
+      display:flex;
+      align-items:center;
+      gap:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .net-pill {
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:6px 10px;
+      min-width:120px;
+      text-align:center;
+    }
+    .container {
+      flex:1;
+      width:100%;
+      max-width:1240px;
+      margin:0 auto;
+      padding:24px 20px 40px;
+    }
+    .tabbar {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-bottom:24px;
+    }
+    .tabbar button {
+      background:var(--surface-2);
+      color:var(--muted);
+      border:1px solid transparent;
+      border-radius:14px;
+      padding:10px 18px;
+      font-size:14px;
+      letter-spacing:.2px;
+      cursor:pointer;
+      transition:.2s ease;
+    }
+    .tabbar button.active {
+      background:linear-gradient(135deg, var(--accent), #748bff);
+      color:#fff;
+      border-color:#7a96ff33;
+      box-shadow:0 8px 16px rgba(91,124,255,.25);
+    }
+    .grid { display:grid; gap:18px; }
+    .grid.two { grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); }
+    .card {
+      background:linear-gradient(180deg, var(--surface), var(--surface-2));
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:20px;
+      box-shadow:0 24px 40px rgba(0,0,0,.25);
+    }
+    h2 { margin:0 0 16px; font-size:22px; letter-spacing:.3px; }
+    h3 { margin:18px 0 10px; font-size:18px; }
+    h4 { margin:14px 0 8px; font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+    p { color:var(--muted); margin:6px 0 14px; line-height:1.55; }
+    .muted { color:var(--muted); }
+    label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+    input, select, textarea {
+      width:100%;
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      color:var(--ink);
+      font-size:14px;
+    }
+    input:focus, select:focus, textarea:focus { outline:2px solid var(--accent); border-color:transparent; }
+    textarea { min-height:120px; resize:vertical; }
+    .row { display:flex; flex-wrap:wrap; gap:12px; }
+    .row > * { flex:1; }
+    .row .compact { flex:0 0 auto; }
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px 18px;
+      border-radius:12px;
+      background:var(--surface-3);
+      border:1px solid transparent;
+      color:var(--ink);
+      font-weight:600;
+      cursor:pointer;
+      transition:.2s ease;
+    }
+    .btn:hover { background:#1f2740; }
+    .btn.primary { background:var(--accent); color:#fff; box-shadow:0 12px 24px rgba(91,124,255,.28); }
+    .btn.ghost { background:transparent; border:1px solid var(--border); color:var(--muted); }
+    .btn.danger { background:rgba(243,127,136,.18); color:#ff9da9; border:1px solid rgba(243,127,136,.35); }
+    .btn.small { padding:7px 12px; font-size:13px; }
+    .flex-between { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .pill-group { display:flex; flex-wrap:wrap; gap:10px; }
+    .pill {
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--surface-2);
+      color:var(--muted);
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill.active { background:var(--accent-soft); color:#fff; border-color:#6d87ff44; }
+    table { width:100%; border-collapse:collapse; margin-top:14px; }
+    th, td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.04); font-size:13px; text-align:right; }
+    th:first-child, td:first-child { text-align:left; }
+    tbody tr:hover { background:rgba(123,146,255,.06); }
+    .metrics { display:flex; flex-wrap:wrap; gap:14px; }
+    .metric {
+      flex:1 1 160px;
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .metric span.value { font-size:26px; font-weight:700; }
+    .metric span.label { font-size:12px; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); }
+    canvas.spark { width:100%; height:120px; background:var(--surface-2); border-radius:14px; border:1px solid var(--border); }
+    .tab { display:none; }
+    .tab.active { display:block; animation:fade .25s ease; }
+    @keyframes fade { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+    .wizard-steps { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+    .wizard-step { padding:12px 16px; border-radius:12px; border:1px solid var(--border); background:var(--surface-2); }
+    .wizard-step.active { border-color:var(--accent); box-shadow:0 0 0 1px rgba(91,124,255,.3); }
+    .wizard-step.completed { opacity:.55; }
+    .wizard-step strong { display:block; font-size:14px; margin-bottom:4px; }
+    .status { margin-top:18px; padding:14px 16px; border-radius:12px; border:1px solid var(--border); background:rgba(91,124,255,.08); color:#9fb3ff; font-size:14px; }
+    .tag { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; background:rgba(91,124,255,.12); color:#aec4ff; border-radius:999px; font-size:12px; text-transform:uppercase; letter-spacing:.7px; }
+    .badge-live { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:10px; background:rgba(90,209,165,.12); color:var(--good); font-weight:600; }
+    .divider { height:1px; background:var(--border); margin:18px 0; }
+    .flow-subtabs { display:flex; gap:10px; margin-bottom:18px; }
+    .flow-subtabs button { flex:1; padding:10px; border-radius:12px; border:1px solid var(--border); background:var(--surface-2); color:var(--muted); cursor:pointer; }
+    .flow-subtabs button.active { background:var(--accent-soft); color:#fff; border-color:#6885ff55; }
+    .inj-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+    .inj-buttons button { flex:1 0 96px; padding:10px; border-radius:12px; border:1px solid var(--border); background:var(--surface-2); color:var(--muted); cursor:pointer; transition:.2s; }
+    .inj-buttons button.active { background:var(--accent); color:#fff; border-color:#738dff; box-shadow:0 8px 18px rgba(91,124,255,.3); }
+    .hint { font-size:13px; color:var(--muted); }
+    .report-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    .report-card { background:var(--surface-2); border:1px solid var(--border); border-radius:16px; padding:16px; }
+    .report-card h4 { margin-top:0; }
+    .report-table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .report-table th, .report-table td { font-size:12px; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.05); text-align:right; }
+    .report-table th:first-child, .report-table td:first-child { text-align:left; }
+    .chip { padding:6px 10px; border-radius:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); font-size:12px; display:inline-flex; gap:6px; align-items:center; }
+    .logless { color:var(--muted); font-style:italic; }
+    @media (max-width:720px) {
+      .topbar { flex-direction:column; align-items:flex-start; gap:12px; }
+      .net-status { margin-left:0; }
+      .inj-buttons button { flex:1 0 calc(50% - 8px); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <span class="badge">V5</span>
+        Injector Bench
+      </div>
+      <div class="tag">ESP32 Flow Bench Suite</div>
+      <div class="net-status">
+        <span class="net-pill">STA: <strong id="net_sta">—</strong></span>
+        <span class="net-pill">AP: <strong id="net_ap">—</strong></span>
+        <span class="net-pill">Wi-Fi: <strong id="wifi_mode">—</strong></span>
+      </div>
+    </div>
+  </header>
+  <main class="container">
+    <div id="top_tabs" class="tabbar"></div>
+
+    <section id="tab_characterize" class="tab active">
+      <div class="grid two">
+        <div class="card">
+          <h2>Injector Characterization Wizard</h2>
+          <p>This guided workflow captures base flow, battery voltage compensation, pressure deltas, and short pulse behavior using the calibrated <strong>ADS1256 scales</strong>, <strong>100&nbsp;psi rail sensor</strong>, and <strong>PT-100 temperature probe</strong>. Complete calibration first, then follow the prompts. The wizard only pauses to let you set battery voltage for each table row.</p>
+          <div class="row">
+            <div>
+              <label>Nominal Rail Pressure (psi)</label>
+              <input id="char_psi" type="number" min="20" max="120" value="58" />
+            </div>
+            <div>
+              <label>Nominal Voltage (V)</label>
+              <input id="char_volt" type="number" min="8" max="18" step="0.1" value="13.5" />
+            </div>
+            <div>
+              <label>Prime Duration (s)</label>
+              <input id="char_prime" type="number" min="0" max="30" value="6" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label>Fluid Density Preset</label>
+              <select id="char_fluid"></select>
+            </div>
+            <div>
+              <label>Custom Density @20&nbsp;°C (g/mL)</label>
+              <input id="char_rho" type="number" step="0.001" value="0.745" />
+            </div>
+            <div>
+              <label>Thermal Coefficient α</label>
+              <input id="char_alpha" type="number" step="0.0001" value="0.0011" />
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="flex-between">
+            <div class="pill-group" id="inj_group"></div>
+            <div class="row compact">
+              <button class="btn ghost small" id="inj_all">All</button>
+              <button class="btn ghost small" id="inj_none">None</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn primary" id="char_start">Start Characterization</button>
+            <button class="btn ghost" id="char_export">Download Report</button>
+            <button class="btn danger" id="char_stop">Stop</button>
+          </div>
+          <div class="status" id="char_status">Idle. Ready when your calibrations are complete.</div>
+        </div>
+
+        <div class="card">
+          <h3>Wizard Progress</h3>
+          <div class="wizard-steps" id="char_steps"></div>
+          <div class="divider"></div>
+          <div>
+            <h4>Live Telemetry</h4>
+            <div class="metrics">
+              <div class="metric"><span class="label">Rail Pressure</span><span class="value" id="live_pressure">—</span><span class="label">psi</span></div>
+              <div class="metric"><span class="label">Rail Voltage</span><span class="value" id="live_voltage">—</span><span class="label">V</span></div>
+              <div class="metric"><span class="label">Fuel Temp</span><span class="value" id="live_temp">—</span><span class="label">°C</span></div>
+            </div>
+            <table>
+              <thead><tr><th>Injector</th><th>Collected mL</th></tr></thead>
+              <tbody id="char_scale_rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="flex-between">
+          <h3>Generated Tables</h3>
+          <span class="badge-live" id="char_tables_state">Waiting…</span>
+        </div>
+        <div class="report-grid" id="char_tables"></div>
+      </div>
+    </section>
+    <section id="tab_flow" class="tab">
+      <div class="card">
+        <div class="flex-between">
+          <h2>Flow Bench</h2>
+          <div class="flow-subtabs">
+            <button id="flow_tab_static" class="active">Static Test</button>
+            <button id="flow_tab_dynamic">Dynamic Test</button>
+          </div>
+        </div>
+        <p>Select injectors, set parameters, and launch a repeatable static or dynamic sequence. Results roll into the Reports tab automatically.</p>
+        <div class="flex-between">
+          <div class="inj-buttons" id="flow_inj"></div>
+          <div class="row compact">
+            <button class="btn ghost small" id="flow_all">All</button>
+            <button class="btn ghost small" id="flow_none">None</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="grid two" id="flow_static">
+          <div>
+            <label>Duration (s)</label>
+            <input id="flow_static_time" type="number" min="1" value="20" />
+          </div>
+          <div>
+            <label>Nominal Pressure (psi)</label>
+            <input id="flow_static_psi" type="number" value="58" />
+          </div>
+          <div>
+            <label>Nominal Voltage (V)</label>
+            <input id="flow_static_v" type="number" step="0.1" value="13.5" />
+          </div>
+        </div>
+        <div class="grid two" id="flow_dynamic" style="display:none;">
+          <div>
+            <label>Frequency (Hz)</label>
+            <input id="flow_dyn_hz" type="number" min="1" value="20" />
+          </div>
+          <div>
+            <label>Pulse Width (ms)</label>
+            <input id="flow_dyn_pw" type="number" step="0.1" value="6" />
+          </div>
+          <div>
+            <label>Duration (s)</label>
+            <input id="flow_dyn_time" type="number" value="10" />
+          </div>
+          <div>
+            <label>Nominal Pressure (psi)</label>
+            <input id="flow_dyn_psi" type="number" value="58" />
+          </div>
+          <div>
+            <label>Nominal Voltage (V)</label>
+            <input id="flow_dyn_v" type="number" step="0.1" value="13.5" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:16px;">
+          <button class="btn primary" id="flow_start">Start Test</button>
+          <button class="btn ghost" id="flow_stop">Stop</button>
+          <button class="btn" id="flow_refresh">Refresh Results</button>
+        </div>
+        <div class="status" id="flow_status">Ready.</div>
+        <table>
+          <thead><tr><th>Injector</th><th>mL</th><th>On-Time (s)</th><th>cc/min</th><th>lb/hr</th></tr></thead>
+          <tbody id="flow_results"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="tab_clean" class="tab">
+      <div class="grid two">
+        <div class="card">
+          <h2>Clean Bench</h2>
+          <p>Drop injectors into cleaning solution and control the pump, backflush solenoids, and firing patterns from here.</p>
+          <div class="inj-buttons" id="clean_inj"></div>
+          <div class="row compact" style="margin-top:12px;">
+            <button class="btn ghost small" id="clean_all">All</button>
+            <button class="btn ghost small" id="clean_none">None</button>
+            <button class="btn ghost small" id="clean_tare">Auto-Tare Scales</button>
+          </div>
+          <div class="divider"></div>
+          <div class="grid two">
+            <div>
+              <label>Cleaning Mode</label>
+              <select id="clean_mode">
+                <option value="pulse">Pulse Clean (dynamic)</option>
+                <option value="static">Static Soak</option>
+                <option value="backflush">Backflush</option>
+              </select>
+            </div>
+            <div>
+              <label>Duration (s)</label>
+              <input id="clean_time" type="number" min="5" value="60" />
+            </div>
+            <div>
+              <label>Pulse Frequency (Hz)</label>
+              <input id="clean_hz" type="number" min="1" value="10" />
+            </div>
+            <div>
+              <label>Pulse Width (ms)</label>
+              <input id="clean_pw" type="number" step="0.1" value="4" />
+            </div>
+            <div>
+              <label>Solvent</label>
+              <input id="clean_solvent" type="text" value="Cleaner" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:16px;">
+            <button class="btn primary" id="clean_start">Start Cleaning</button>
+            <button class="btn danger" id="clean_stop">Stop</button>
+          </div>
+          <div class="status" id="clean_status">Idle.</div>
+        </div>
+        <div class="card">
+          <h3>Live Outputs</h3>
+          <p class="hint">Monitor the pump SSR, injector drivers, and temperature during cleaning.</p>
+          <div class="metrics">
+            <div class="metric"><span class="label">Pump Output</span><span class="value" id="clean_pump">—</span></div>
+            <div class="metric"><span class="label">Backflush</span><span class="value" id="clean_backflush">—</span></div>
+            <div class="metric"><span class="label">Time Remaining</span><span class="value" id="clean_timer">—</span></div>
+          </div>
+          <table>
+            <thead><tr><th>Injector</th><th>Status</th></tr></thead>
+            <tbody id="clean_inj_state"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab_calibration" class="tab">
+      <div class="grid two">
+        <div class="card">
+          <h2>Calibration</h2>
+          <p>Set up the ADS1256 scale calibration, rail sensor calibration, and default run settings. Density and α feed the mass conversion math for reports.</p>
+          <div class="grid two">
+            <div>
+              <label>Nominal Pressure (psi)</label>
+              <input id="cal_psi" type="number" value="58" />
+            </div>
+            <div>
+              <label>Nominal Voltage (V)</label>
+              <input id="cal_volt" type="number" step="0.1" value="13.5" />
+            </div>
+            <div>
+              <label>Target Volume (mL)</label>
+              <input id="cal_target" type="number" value="100" />
+            </div>
+          </div>
+          <div class="grid two" style="margin-top:14px;">
+            <div>
+              <label>Fuel Density (g/mL)</label>
+              <input id="cal_rho" type="number" step="0.001" value="0.745" />
+            </div>
+            <div>
+              <label>Thermal Coefficient α</label>
+              <input id="cal_alpha" type="number" step="0.0001" value="0.0011" />
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn primary" id="cal_save">Save Calibration</button>
+            <button class="btn" id="cal_load">Reload</button>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <h4>Sensor Calibration</h4>
+            <div class="grid two">
+              <div><label>Voltage Zero</label><input id="cal_v_zero" type="number" step="0.001" /></div>
+              <div><label>Voltage Span</label><input id="cal_v_span" type="number" step="0.001" /></div>
+              <div><label>Pressure Zero</label><input id="cal_p_zero" type="number" step="0.001" /></div>
+              <div><label>Pressure Span</label><input id="cal_p_span" type="number" step="0.001" /></div>
+              <div><label>Temperature Zero</label><input id="cal_t_zero" type="number" step="0.001" /></div>
+              <div><label>Temperature Span</label><input id="cal_t_span" type="number" step="0.001" /></div>
+            </div>
+            <div class="row" style="margin-top:14px;">
+              <button class="btn" id="cal_sensor_save">Save Sensor Cal</button>
+              <button class="btn ghost" id="cal_sensor_reload">Reload</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Scale Utilities</h3>
+          <p>Eight 1&nbsp;kg load cells feed the dual ADS1256 boards. Tare them individually or all at once before a test.</p>
+          <div class="row" style="margin-bottom:16px;">
+            <button class="btn" id="scale_tare_all">Tare All</button>
+            <input id="scale_span" type="number" step="0.1" placeholder="Span mass (g)" />
+            <button class="btn" id="scale_apply_span">Apply Span</button>
+          </div>
+          <table>
+            <thead><tr><th>Injector</th><th>Current mL</th></tr></thead>
+            <tbody id="scale_table"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <section id="tab_reports" class="tab">
+      <div class="card">
+        <div class="flex-between">
+          <h2>Reports</h2>
+          <button class="btn" id="reports_refresh">Refresh</button>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span class="label">Density @ 20 °C</span><span class="value" id="rep_rho">—</span></div>
+          <div class="metric"><span class="label">Holley IFR (lb/hr)</span><span class="value" id="rep_holley_ifr">—</span></div>
+          <div class="metric"><span class="label">Min Pulse Width</span><span class="value" id="rep_min_pw">—</span></div>
+        </div>
+        <div id="reports_tables" class="report-grid" style="margin-top:18px;"></div>
+        <div class="divider"></div>
+        <div>
+          <h3>Latest Flow Sheet</h3>
+          <table class="report-table">
+            <thead><tr><th>Injector</th><th>mL</th><th>On-Time (s)</th><th>cc/min</th><th>lb/hr</th></tr></thead>
+            <tbody id="reports_flow"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab_live" class="tab">
+      <div class="card">
+        <div class="flex-between">
+          <h2>Live Data</h2>
+          <span class="badge-live">Streaming</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span class="label">Rail Pressure</span><span class="value" id="live_pressure2">—</span></div>
+          <div class="metric"><span class="label">Rail Voltage</span><span class="value" id="live_voltage2">—</span></div>
+          <div class="metric"><span class="label">Fuel Temperature</span><span class="value" id="live_temp2">—</span></div>
+        </div>
+        <div class="grid two" style="margin-top:20px;">
+          <canvas id="chart_pressure" class="spark" height="140"></canvas>
+          <canvas id="chart_voltage" class="spark" height="140"></canvas>
+          <canvas id="chart_temp" class="spark" height="140"></canvas>
+          <canvas id="chart_mass" class="spark" height="140"></canvas>
+        </div>
+        <div class="divider"></div>
+        <table>
+          <thead><tr><th>Injector</th><th>Live mL</th></tr></thead>
+          <tbody id="live_scale_rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab_settings" class="tab">
+      <div class="grid two">
+        <div class="card">
+          <h2>System Controls</h2>
+          <p>Manual pump override, suite management, and resets.</p>
+          <div class="row">
+            <button class="btn" id="pump_on">Pump On</button>
+            <button class="btn ghost" id="pump_off">Pump Off</button>
+            <span class="chip" id="pump_state">Pump: —</span>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn" id="suite_clear">Clear Suite Data</button>
+            <button class="btn" id="suite_refresh">Refresh Status</button>
+          </div>
+          <div class="status" id="suite_status">No suite data yet.</div>
+        </div>
+        <div class="card">
+          <h3>Wi-Fi Setup</h3>
+          <div class="grid two">
+            <div><label>SSID</label><input id="wifi_ssid" type="text" /></div>
+            <div><label>Password</label><input id="wifi_pass" type="password" /></div>
+            <div><label>Hostname</label><input id="wifi_host" type="text" /></div>
+          </div>
+          <div class="row" style="margin-top:14px;">
+            <button class="btn primary" id="wifi_save">Save Wi-Fi</button>
+            <button class="btn" id="wifi_reload">Reload</button>
+          </div>
+          <div class="status" id="wifi_status">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+  const STATE = {
+    injMask: 0xff,
+    flowMode: 'static',
+    history: {pressure:[], voltage:[], temp:[], mass:[]},
+    char: {running:false, cancelled:false, resolver:null, steps:[]},
+    axes: {volts:[9,10.5,12,13.5,14,15], dkp:[0,20,40,60,80], spa:[0.8,1.2,1.6,2.0,2.4,2.8]},
+    fluidPresets: [
+      {name:'Gasoline', rho20:0.745, alpha:0.00110},
+      {name:'Heptane', rho20:0.684, alpha:0.00110},
+      {name:'Diesel', rho20:0.832, alpha:0.00080},
+      {name:'Mineral Spirits', rho20:0.790, alpha:0.00090},
+      {name:'Water', rho20:0.998, alpha:0.00030},
+      {name:'Custom', rho20:0.744, alpha:0.00100}
+    ]
+  };
+
+  const TABS = [
+    {id:'characterize', label:'Characterize'},
+    {id:'flow', label:'Flow Tests'},
+    {id:'clean', label:'Clean'},
+    {id:'calibration', label:'Calibration'},
+    {id:'reports', label:'Reports'},
+    {id:'live', label:'Live Data'},
+    {id:'settings', label:'Settings'}
+  ];
+
+  function byId(id){ return document.getElementById(id); }
+  function qs(sel){ return document.querySelector(sel); }
+  function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
+
+  async function fetchJSON(path, opts={}){
+    const res = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
+    if(!res.ok) throw new Error(path+' '+res.status);
+    try { return await res.json(); } catch(err){ return {}; }
+  }
+  async function postJSON(path, body={}){ return fetchJSON(path,{method:'POST', body:JSON.stringify(body)}); }
+
+  function buildTabs(){
+    const host = byId('top_tabs');
+    TABS.forEach(t=>{
+      const btn=document.createElement('button');
+      btn.textContent=t.label;
+      btn.id='tabbtn_'+t.id;
+      btn.onclick=()=>showTab(t.id);
+      host.appendChild(btn);
+    });
+    markActiveTab('characterize');
+  }
+
+  function showTab(id){
+    document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.id==='tab_'+id));
+    markActiveTab(id);
+    if(id==='reports') refreshReports();
+  }
+  function markActiveTab(id){
+    TABS.forEach(t=>{ const btn = byId('tabbtn_'+t.id); if(btn) btn.classList.toggle('active', t.id===id); });
+  }
+
+  function buildInjectorButtons(){
+    ['inj_group','flow_inj','clean_inj'].forEach(host=>{
+      const wrap=byId(host);
+      if(!wrap) return;
+      wrap.innerHTML='';
+      for(let i=0;i<8;i++){
+        const btn=document.createElement('button');
+        btn.className='btn small';
+        btn.textContent='INJ '+(i+1);
+        btn.dataset.idx=i;
+        btn.onclick=()=>toggleInjector(i);
+        wrap.appendChild(btn);
+      }
+    });
+    syncInjectorButtons();
+  }
+
+  function toggleInjector(i){
+    STATE.injMask ^= (1<<i);
+    if((STATE.injMask & 0xff)===0) STATE.injMask = (1<<i);
+    syncInjectorButtons();
+  }
+  function setInjectors(mask){ STATE.injMask = mask & 0xff; if(!STATE.injMask) STATE.injMask = 0xff; syncInjectorButtons(); }
+  function syncInjectorButtons(){
+    document.querySelectorAll('[data-idx]').forEach(btn=>{
+      const idx=parseInt(btn.dataset.idx,10);
+      btn.classList.toggle('active', !!(STATE.injMask & (1<<idx)));
+    });
+  }
+  function selectedInjectors(){
+    const list=[]; for(let i=0;i<8;i++) if(STATE.injMask & (1<<i)) list.push(i);
+    return list.length?list:[0];
+  }
+
+  async function updateNetwork(){
+    try{
+      const net = await fetchJSON('/api/net');
+      byId('net_sta').textContent = net.sta_ip || '—';
+      byId('net_ap').textContent = net.ap_ip || '—';
+      byId('wifi_mode').textContent = net.mode || '—';
+    }catch(err){}
+  }
+
+  function toFixed(val, digits){
+    if(val===undefined || val===null || Number.isNaN(val)) return '—';
+    return Number(val).toFixed(digits);
+  }
+
+  async function pollTelemetry(){
+    try{
+      const t = await fetchJSON('/api/telemetry');
+      const pressure = toFixed(t.pressure,1);
+      const voltage  = toFixed(t.voltage,2);
+      const temp     = toFixed(t.tempC,1);
+      byId('live_pressure').textContent = pressure;
+      byId('live_voltage').textContent = voltage;
+      byId('live_temp').textContent = temp;
+      byId('live_pressure2').textContent = pressure;
+      byId('live_voltage2').textContent = voltage;
+      byId('live_temp2').textContent = temp;
+      const scales = t.scales || new Array(8).fill(0);
+      updateScaleTables(scales);
+      pushHistoryPoint(t);
+    }catch(err){}
+  }
+
+  function updateScaleTables(arr){
+    [byId('char_scale_rows'), byId('live_scale_rows'), byId('scale_table')].forEach(tb=>{
+      if(!tb) return;
+      tb.innerHTML='';
+      arr.forEach((v,i)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>Injector ${i+1}</td><td>${Number(v||0).toFixed(2)}</td>`;
+        tb.appendChild(tr);
+      });
+    });
+  }
+
+  function pushHistoryPoint(t){
+    const limit=180;
+    const push=(key,val)=>{ const list=STATE.history[key]; if(!Array.isArray(list)) return; list.push(val); if(list.length>limit) list.shift(); };
+    push('pressure', Number(t.pressure||0));
+    push('voltage', Number(t.voltage||0));
+    push('temp', Number(t.tempC||0));
+    const total=(t.scales||[]).reduce((sum,v)=>sum+Number(v||0),0);
+    push('mass', total);
+    renderCharts();
+  }
+
+  function renderCharts(){
+    drawSpark(byId('chart_pressure'), STATE.history.pressure, '#5ad1a5');
+    drawSpark(byId('chart_voltage'), STATE.history.voltage, '#5b7cff');
+    drawSpark(byId('chart_temp'), STATE.history.temp, '#f4a261');
+    drawSpark(byId('chart_mass'), STATE.history.mass, '#8b5bff');
+  }
+  function drawSpark(canvas, values, color){
+    if(!canvas || !canvas.getContext) return;
+    const ctx=canvas.getContext('2d');
+    const w=canvas.width=canvas.clientWidth*window.devicePixelRatio;
+    const h=canvas.height=canvas.clientHeight*window.devicePixelRatio;
+    ctx.clearRect(0,0,w,h);
+    if(!values || values.length<2) return;
+    const min=Math.min(...values); const max=Math.max(...values); const span=max-min || 1;
+    ctx.lineWidth=2*window.devicePixelRatio; ctx.strokeStyle=color; ctx.beginPath();
+    values.forEach((v,i)=>{
+      const x=(i/(values.length-1))*w;
+      const y=h-((v-min)/span)*h;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+  async function applyNominalSettings(psi, volt){
+    await postJSON('/api/settings',{psi_nom:parseFloat(psi)||58, volt_nom:parseFloat(volt)||13.5, fluid:'Bench'});
+  }
+  async function applyFluidSelection(){
+    const name = byId('char_fluid').value;
+    let preset = STATE.fluidPresets.find(f=>f.name===name) || STATE.fluidPresets[0];
+    if(name!=='Custom'){
+      byId('char_rho').value = preset.rho20;
+      byId('char_alpha').value = preset.alpha;
+    }
+    await postJSON('/api/fluid',{
+      name,
+      rho20:parseFloat(byId('char_rho').value)||preset.rho20,
+      alpha:parseFloat(byId('char_alpha').value)||preset.alpha,
+      rho_custom:parseFloat(byId('char_rho').value)||preset.rho20
+    });
+    await postJSON('/api/calibration',{rho:parseFloat(byId('char_rho').value)||preset.rho20});
+  }
+
+  function setFlowMode(mode){
+    STATE.flowMode = mode;
+    byId('flow_tab_static').classList.toggle('active', mode==='static');
+    byId('flow_tab_dynamic').classList.toggle('active', mode==='dynamic');
+    byId('flow_static').style.display = mode==='static'?'grid':'none';
+    byId('flow_dynamic').style.display = mode==='dynamic'?'grid':'none';
+  }
+
+  async function startFlow(){
+    const mask = STATE.injMask;
+    if(STATE.flowMode==='static'){
+      const secs=parseInt(byId('flow_static_time').value||'20');
+      await applyNominalSettings(byId('flow_static_psi').value, byId('flow_static_v').value);
+      await postJSON('/api/characterize/start',{mode:'static', params:{seconds:secs, mask}});
+      byId('flow_status').textContent='Static test running…';
+    }else{
+      const hz=parseFloat(byId('flow_dyn_hz').value||'20');
+      const pw=parseFloat(byId('flow_dyn_pw').value||'6');
+      const secs=parseInt(byId('flow_dyn_time').value||'10');
+      await applyNominalSettings(byId('flow_dyn_psi').value, byId('flow_dyn_v').value);
+      await postJSON('/api/characterize/start',{mode:'dynamic', params:{hz, pw_ms:pw, seconds:secs, mask}});
+      byId('flow_status').textContent='Dynamic test running…';
+    }
+  }
+  async function stopFlow(){
+    try{ await postJSON('/api/characterize/stop',{}); }catch(err){}
+    byId('flow_status').textContent='Stopped.';
+    await refreshFlowResults();
+  }
+  async function refreshFlowResults(){
+    try{
+      const rep = await fetchJSON('/api/report');
+      renderFlowRows(rep, byId('flow_results'));
+      byId('flow_status').textContent='Results updated.';
+    }catch(err){ byId('flow_status').textContent='Unable to load results.'; }
+  }
+  function renderFlowRows(rep, host){
+    if(!host) return;
+    host.innerHTML='';
+    const mls = rep.flow_mL || [];
+    const on  = rep.on_time_s || [];
+    const cc  = rep.cc_min || [];
+    const lb  = rep.lbs_hr || [];
+    for(let i=0;i<8;i++){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${i+1}</td><td>${toFixed(mls[i],1)}</td><td>${toFixed(on[i],2)}</td><td>${toFixed(cc[i],1)}</td><td>${toFixed(lb[i],1)}</td>`;
+      host.appendChild(tr);
+    }
+  }
+
+  async function startCleaning(){
+    const mode=byId('clean_mode').value;
+    const seconds=parseInt(byId('clean_time').value||'60');
+    const mask=STATE.injMask;
+    const payload={mask, solvent:byId('clean_solvent').value||'Cleaner', seconds};
+    if(mode==='pulse'){
+      payload.hz=parseFloat(byId('clean_hz').value||'10');
+      payload.pw_ms=parseFloat(byId('clean_pw').value||'4');
+      await postJSON('/api/characterize/start',{mode:'dynamic', params:{hz:payload.hz, pw_ms:payload.pw_ms, seconds, mask}});
+      byId('clean_status').textContent='Pulse cleaning…';
+    }else if(mode==='static'){
+      await postJSON('/api/characterize/start',{mode:'static', params:{seconds, mask}});
+      byId('clean_status').textContent='Static soak running…';
+    }else{
+      await postJSON('/api/clean',{backflush_on:true, mask, seconds});
+      byId('clean_status').textContent='Backflush running…';
+    }
+    await postJSON('/api/clean',Object.assign({pump_on:true},payload));
+  }
+  async function stopCleaning(){
+    try{ await postJSON('/api/characterize/stop',{}); }catch(err){}
+    await postJSON('/api/clean',{pump_on:false, backflush_on:false});
+    byId('clean_status').textContent='Stopped.';
+  }
+  async function refreshCleanState(){
+    try{
+      const st=await fetchJSON('/api/clean');
+      byId('clean_pump').textContent=st.pump_on?'ON':'Off';
+      byId('clean_backflush').textContent=st.backflush_on?'ON':'Off';
+      byId('clean_timer').textContent=((st.remaining_ms||0)/1000).toFixed(0)+' s';
+    }catch(err){}
+  }
+
+  async function saveCalibration(){
+    await applyNominalSettings(byId('cal_psi').value, byId('cal_volt').value);
+    await postJSON('/api/calibration',{rho:parseFloat(byId('cal_rho').value||'0.745'), alpha:parseFloat(byId('cal_alpha').value||'0.0011')});
+  }
+  async function loadCalibration(){
+    try{
+      const rep=await fetchJSON('/api/report');
+      if(rep.psi_nom!==undefined) byId('cal_psi').value=rep.psi_nom;
+      if(rep.volt_nom!==undefined) byId('cal_volt').value=rep.volt_nom;
+      if(rep.rho!==undefined) byId('cal_rho').value=rep.rho;
+    }catch(err){}
+  }
+
+  async function loadSensors(){
+    try{
+      const s=await fetchJSON('/api/sensors');
+      byId('cal_v_zero').value = s.v_zero ?? '';
+      byId('cal_v_span').value = s.v_span ?? '';
+      byId('cal_p_zero').value = s.p_zero ?? '';
+      byId('cal_p_span').value = s.p_span ?? '';
+      byId('cal_t_zero').value = s.t_zero ?? '';
+      byId('cal_t_span').value = s.t_span ?? '';
+    }catch(err){}
+  }
+  async function saveSensors(){
+    await postJSON('/api/sensors',{
+      v_zero:parseFloat(byId('cal_v_zero').value||0),
+      v_span:parseFloat(byId('cal_v_span').value||1),
+      p_zero:parseFloat(byId('cal_p_zero').value||0),
+      p_span:parseFloat(byId('cal_p_span').value||1),
+      t_zero:parseFloat(byId('cal_t_zero').value||0),
+      t_span:parseFloat(byId('cal_t_span').value||1)
+    });
+  }
+  async function tareAll(){ await postJSON('/api/scales',{tare:true}); }
+  async function spanAll(){
+    const mass=parseFloat(byId('scale_span').value||'0');
+    for(let i=0;i<8;i++){ await postJSON('/api/scales/span',{ch:i, mass_g:mass}); }
+  }
+
+  async function refreshReports(){
+    try{
+      const rep=await fetchJSON('/api/report');
+      byId('rep_rho').textContent=toFixed(rep.rho,4);
+      byId('rep_holley_ifr').textContent=toFixed(rep.holley_ifr_lbhr,2);
+      if(rep.spa && rep.spa.min_pw_ms!==undefined) byId('rep_min_pw').textContent=toFixed(rep.spa.min_pw_ms,2)+' ms';
+      renderFlowRows(rep, byId('reports_flow'));
+      renderReportTables(rep);
+    }catch(err){}
+  }
+  function renderReportTables(rep){
+    const host=byId('reports_tables');
+    if(!host) return;
+    host.innerHTML='';
+    const blocks=[];
+    if(rep.suite_holley_ccmin_v){
+      blocks.push({title:'Holley CC/Min vs Voltage', headers:['Volt','Inj1','Inj2','Inj3','Inj4','Inj5','Inj6','Inj7','Inj8'], rows:rep.suite_holley_ccmin_v.map((row,i)=>[STATE.axes.volts[i]||('Row '+(i+1)), ...row.map(v=>toFixed(v,1))])});
+    }
+    if(rep.suite_p59_ccmin_kpa){
+      blocks.push({title:'P59 CC/Min vs ΔkPa', headers:['ΔkPa','Inj1','Inj2','Inj3','Inj4','Inj5','Inj6','Inj7','Inj8'], rows:rep.suite_p59_ccmin_kpa.map((row,i)=>[STATE.axes.dkp[i]||('Row '+(i+1)), ...row.map(v=>toFixed(v,1))])});
+    }
+    if(rep.suite_p59_offset_ms_v){
+      blocks.push({title:'P59 Offset (ms) vs Voltage', headers:['Volt','Offset'], rows:rep.suite_p59_offset_ms_v.map((row,i)=>[STATE.axes.volts[i]||('Row '+(i+1)), toFixed(row[0],3)])});
+    }
+    if(rep.spa && rep.spa.adder_ms){
+      blocks.push({title:'Short Pulse Adder', headers:['PW Bin (ms)','Adder (ms)'], rows:rep.spa.adder_ms.map((v,i)=>[(STATE.axes.spa[i]||0).toFixed(2), toFixed(v,3)])});
+    }
+    if(!blocks.length){ host.innerHTML='<p class="logless">Run the characterization wizard to generate ECU tables.</p>'; return; }
+    blocks.forEach(block=>{
+      const card=document.createElement('div'); card.className='report-card';
+      card.innerHTML='<h4>'+block.title+'</h4>';
+      const table=document.createElement('table'); table.className='report-table';
+      if(block.headers){ const thead=document.createElement('thead'); thead.innerHTML='<tr>'+block.headers.map(h=>`<th>${h}</th>`).join('')+'</tr>'; table.appendChild(thead); }
+      const tbody=document.createElement('tbody');
+      (block.rows||[]).forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=row.map((cell,idx)=>`<td style="text-align:${idx===0?'left':'right'}">${cell}</td>`).join('');
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      card.appendChild(table);
+      host.appendChild(card);
+    });
+  }
+
+  async function pumpControl(state){ await postJSON('/api/pump',{state:state?1:0}); await updatePumpState(); }
+  async function updatePumpState(){
+    try{ const st=await fetchJSON('/api/pump'); byId('pump_state').textContent='Pump: '+(st.state?'ON':'Off'); }
+    catch(err){ byId('pump_state').textContent='Pump: ?'; }
+  }
+
+  async function loadWifi(){
+    try{
+      const w=await fetchJSON('/api/wifi');
+      byId('wifi_ssid').value=w.ssid||'';
+      byId('wifi_host').value=w.host||'';
+      byId('wifi_status').textContent=(w.connected?'Connected ':'AP ')+(w.ip||'');
+    }catch(err){ byId('wifi_status').textContent='Unable to load Wi-Fi status.'; }
+  }
+  async function saveWifi(){
+    try{
+      await postJSON('/api/wifi',{ssid:byId('wifi_ssid').value, pass:byId('wifi_pass').value, host:byId('wifi_host').value});
+      byId('wifi_status').textContent='Credentials saved.';
+    }catch(err){ byId('wifi_status').textContent='Wi-Fi update failed.'; }
+  }
+
+  async function refreshSuite(){
+    try{
+      const st=await fetchJSON('/api/suite');
+      byId('suite_status').textContent=`Phase ${st.phase} • Index ${st.index}`;
+    }catch(err){ byId('suite_status').textContent='No suite status available.'; }
+  }
+  async function clearSuite(){ await postJSON('/api/suite/clear',{}); await refreshSuite(); }
+  function buildFlowTabs(){
+    byId('flow_tab_static').onclick=()=>setFlowMode('static');
+    byId('flow_tab_dynamic').onclick=()=>setFlowMode('dynamic');
+  }
+  function buildFluidSelect(){
+    const sel=byId('char_fluid'); sel.innerHTML='';
+    STATE.fluidPresets.forEach(p=>{ const opt=document.createElement('option'); opt.value=p.name; opt.textContent=p.name; sel.appendChild(opt); });
+    sel.value='Gasoline'; sel.onchange=applyFluidSelection;
+  }
+  function buildCharSteps(){
+    const steps=[
+      {id:'cal', label:'Verify sensor calibrations'},
+      {id:'prime', label:'Prime rail & purge air'},
+      {id:'base', label:'Base flow capture (nominal PSI/V)'},
+      {id:'holley', label:'Holley voltage sweep'},
+      {id:'p59v', label:'P59 voltage offset sweep'},
+      {id:'spa', label:'Short pulse adder sweep'},
+      {id:'final', label:'Generate reports'}
+    ];
+    STATE.char.steps=steps.map(s=>Object.assign({},s,{state:'idle'}));
+    renderCharSteps();
+  }
+  function renderCharSteps(){
+    const host=byId('char_steps');
+    host.innerHTML='';
+    STATE.char.steps.forEach(step=>{
+      const div=document.createElement('div');
+      div.className='wizard-step '+(step.state==='active'?'active':step.state==='done'?'completed':'');
+      div.innerHTML=`<strong>${step.label}</strong><span class="muted">${step.message||''}</span>`;
+      host.appendChild(div);
+    });
+  }
+  function setCharStepState(id, state, message){
+    const step=STATE.char.steps.find(s=>s.id===id);
+    if(step){ step.state=state; if(message) step.message=message; }
+    renderCharSteps();
+  }
+  async function ensureAxes(){
+    try{ const ax=await fetchJSON('/api/axes');
+      if(Array.isArray(ax.volts)) STATE.axes.volts=ax.volts;
+      if(Array.isArray(ax.dkp)) STATE.axes.dkp=ax.dkp;
+      if(Array.isArray(ax.spa)) STATE.axes.spa=ax.spa;
+    }catch(err){}
+  }
+  async function charWaitForUser(msg){
+    return new Promise(resolve=>{
+      STATE.char.resolver=resolve;
+      const status=byId('char_status');
+      status.textContent=msg+' Click Continue when ready.';
+      const btn=document.createElement('button');
+      btn.className='btn primary small';
+      btn.textContent='Continue';
+      btn.onclick=()=>{ btn.remove(); STATE.char.resolver=null; resolve(); };
+      status.appendChild(document.createTextNode(' '));
+      status.appendChild(btn);
+    });
+  }
+
+  async function runCharacterize(){
+    if(STATE.char.running) return;
+    STATE.char.running=true; STATE.char.cancelled=false;
+    byId('char_status').textContent='Starting sequence…';
+    setCharStepState('cal','active','Confirm calibration values.');
+    try{
+      await applyFluidSelection();
+      await applyNominalSettings(byId('char_psi').value, byId('char_volt').value);
+      setCharStepState('cal','done','Calibrations loaded.');
+      setCharStepState('prime','active','Priming rail…');
+      await pumpControl(true);
+      await sleep((parseInt(byId('char_prime').value||'6'))*1000);
+      await pumpControl(false);
+      setCharStepState('prime','done','Prime complete.');
+      await ensureAxes();
+      await runCharBase();
+      await runCharHolley();
+      await runCharP59Offsets();
+      await runCharSPA();
+      setCharStepState('final','active','Finalizing tables…');
+      await postJSON('/api/suite/finalize',{});
+      await sleep(300);
+      await refreshReports();
+      setCharStepState('final','done','Reports generated.');
+      byId('char_tables_state').textContent='Up to date';
+      byId('char_status').textContent='Characterization complete.';
+    }catch(err){
+      console.error(err);
+      byId('char_status').textContent='Characterization stopped: '+err.message;
+    }
+    STATE.char.running=false;
+  }
+  async function runCharBase(){
+    if(STATE.char.cancelled) throw new Error('Cancelled');
+    setCharStepState('base','active','Measuring base flow…');
+    await postJSON('/api/suite/clear',{});
+    await postJSON('/api/suite/arm',{phase:1,index:0});
+    await pumpControl(true);
+    await postJSON('/api/characterize/start',{mode:'dynamic', params:{hz:20, pw_ms:6, seconds:10, mask:STATE.injMask}});
+    await sleep(11000);
+    await postJSON('/api/characterize/stop',{});
+    await pumpControl(false);
+    await postJSON('/api/suite/commit',{});
+    setCharStepState('base','done','Base run stored.');
+  }
+  async function runCharHolley(){
+    setCharStepState('holley','active','Voltage sweep in progress…');
+    for(let i=0;i<STATE.axes.volts.length;i++){
+      if(STATE.char.cancelled) throw new Error('Cancelled');
+      const volt=STATE.axes.volts[i];
+      await charWaitForUser(`Set supply to ${volt.toFixed(1)} V.`);
+      await applyNominalSettings(byId('char_psi').value, volt);
+      await postJSON('/api/suite/arm',{phase:2,index:i});
+      await pumpControl(true);
+      await postJSON('/api/characterize/start',{mode:'dynamic', params:{hz:20, pw_ms:6, seconds:10, mask:STATE.injMask}});
+      await sleep(11000);
+      await postJSON('/api/characterize/stop',{});
+      await pumpControl(false);
+      await postJSON('/api/suite/commit',{});
+    }
+    setCharStepState('holley','done','Holley table captured.');
+  }
+  async function runCharP59Offsets(){
+    setCharStepState('p59v','active','Dead-time sweep running…');
+    for(let i=0;i<STATE.axes.volts.length;i++){
+      if(STATE.char.cancelled) throw new Error('Cancelled');
+      const volt=STATE.axes.volts[i];
+      await charWaitForUser(`Hold supply at ${volt.toFixed(1)} V for offset sweep.`);
+      await applyNominalSettings(byId('char_psi').value, volt);
+      await postJSON('/api/suite/arm',{phase:4,index:i});
+      const pwBins=[2,2.5,3,3.5,4,5,6];
+      for(const pw of pwBins){
+        await pumpControl(true);
+        await postJSON('/api/characterize/start',{mode:'dynamic', params:{hz:20, pw_ms:pw, seconds:5, mask:STATE.injMask}});
+        await sleep(6000);
+        await postJSON('/api/characterize/stop',{});
+        await pumpControl(false);
+        await postJSON('/api/suite/add_p59v_point',{pw_ms:pw, hz:20, seconds:5, volt_row:i});
+      }
+      await postJSON('/api/suite/fit_p59v',{});
+    }
+    setCharStepState('p59v','done','Voltage offsets solved.');
+  }
+  async function runCharSPA(){
+    setCharStepState('spa','active','Short pulse sweep running…');
+    for(let i=0;i<STATE.axes.spa.length;i++){
+      if(STATE.char.cancelled) throw new Error('Cancelled');
+      const pw=STATE.axes.spa[i];
+      await pumpControl(true);
+      await postJSON('/api/characterize/start',{mode:'dynamic', params:{hz:20, pw_ms:pw, seconds:5, mask:STATE.injMask}});
+      await sleep(6000);
+      await postJSON('/api/characterize/stop',{});
+      await pumpControl(false);
+      await postJSON('/api/suite/spa_point',{bin_index:i, hz:20, seconds:5, pw_ms:pw});
+    }
+    await postJSON('/api/suite/spa_fit',{});
+    setCharStepState('spa','done','SPA table computed.');
+  }
+  function cancelCharacterize(){
+    STATE.char.cancelled=true;
+    byId('char_status').textContent='Cancelling…';
+    if(typeof STATE.char.resolver==='function'){ try{ STATE.char.resolver(); }catch(e){} STATE.char.resolver=null; }
+    postJSON('/api/characterize/stop',{}).catch(()=>{});
+  }
+  function downloadReport(){
+    fetch('/api/report').then(r=>r.json()).then(data=>{
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='injectorbench_report.json'; a.click(); URL.revokeObjectURL(url);
+    });
+  }
+
+  function attachEvents(){
+    byId('inj_all').onclick=()=>setInjectors(0xff);
+    byId('inj_none').onclick=()=>setInjectors(0x00);
+    byId('flow_all').onclick=()=>setInjectors(0xff);
+    byId('flow_none').onclick=()=>setInjectors(0x00);
+    byId('clean_all').onclick=()=>setInjectors(0xff);
+    byId('clean_none').onclick=()=>setInjectors(0x00);
+    byId('clean_tare').onclick=()=>tareAll();
+    byId('char_start').onclick=()=>runCharacterize();
+    byId('char_stop').onclick=()=>cancelCharacterize();
+    byId('char_export').onclick=()=>downloadReport();
+    byId('flow_start').onclick=()=>startFlow();
+    byId('flow_stop').onclick=()=>stopFlow();
+    byId('flow_refresh').onclick=()=>refreshFlowResults();
+    byId('clean_start').onclick=()=>startCleaning();
+    byId('clean_stop').onclick=()=>stopCleaning();
+    byId('cal_save').onclick=()=>saveCalibration();
+    byId('cal_load').onclick=()=>loadCalibration();
+    byId('cal_sensor_save').onclick=()=>saveSensors();
+    byId('cal_sensor_reload').onclick=()=>loadSensors();
+    byId('scale_tare_all').onclick=()=>tareAll();
+    byId('scale_apply_span').onclick=()=>spanAll();
+    byId('reports_refresh').onclick=()=>refreshReports();
+    byId('pump_on').onclick=()=>pumpControl(true);
+    byId('pump_off').onclick=()=>pumpControl(false);
+    byId('suite_refresh').onclick=()=>refreshSuite();
+    byId('suite_clear').onclick=()=>clearSuite();
+    byId('wifi_save').onclick=()=>saveWifi();
+    byId('wifi_reload').onclick=()=>loadWifi();
+    buildFlowTabs();
+  }
+
+  async function init(){
+    buildTabs();
+    buildInjectorButtons();
+    buildFluidSelect();
+    buildCharSteps();
+    attachEvents();
+    await applyFluidSelection();
+    await updateNetwork();
+    await loadSensors();
+    await loadWifi();
+    await updatePumpState();
+    refreshSuite();
+    refreshReports();
+    refreshFlowResults();
+    setInterval(updateNetwork, 5000);
+    setInterval(pollTelemetry, 500);
+    setInterval(refreshCleanState, 2000);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
