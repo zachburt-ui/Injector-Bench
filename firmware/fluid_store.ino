@@ -1,0 +1,4 @@
+#include "globals.h"
+FluidState gFluid;
+void fluid_load_from_nvs(){ prefs.begin("bench", true); String n=prefs.getString("fluid_name","Gasoline"); double r20=prefs.getDouble("fluid_rho20",0.745); double a=prefs.getDouble("fluid_alpha",0.00110); double rc=prefs.getDouble("fluid_rhoc",0.744); prefs.end(); strncpy(gFluid.name,n.c_str(),15); gFluid.rho20=r20; gFluid.alpha=a; gFluid.rho_custom=rc; }
+void fluid_save_to_nvs(){ prefs.begin("bench", false); prefs.putString("fluid_name", gFluid.name); prefs.putDouble("fluid_rho20", gFluid.rho20); prefs.putDouble("fluid_alpha", gFluid.alpha); prefs.putDouble("fluid_rhoc", gFluid.rho_custom); prefs.end(); }

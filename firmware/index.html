@@ -1,0 +1,2010 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Injector Bench</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;margin:0;background:#0b0e12;color:#e5e7eb}
+  header{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid #1f2937;background:#0f1318;position:sticky;top:0}
+  .brand{font-weight:700}
+  nav button{margin-right:6px}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .card{background:#0f141b;border:1px solid #1f2937;border-radius:14px;padding:14px;box-shadow:0 1px 0 #0003;margin-bottom:12px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .grow{flex:1}
+  .btn{padding:8px 12px;border-radius:10px;border:1px solid #374151;background:#111827;color:#e5e7eb;cursor:pointer}
+  .btn.primary{background:#2563eb;border-color:#1d4ed8}
+  input,select{background:#0b0f14;border:1px solid #293241;border-radius:10px;color:#e5e7eb;padding:8px}
+  label{display:block;font-size:12px;color:#9ca3af;margin-top:8px}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid #1f2937;padding:8px;text-align:right;font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left}
+  .tab{display:none}.tab.active{display:block}
+  .muted{color:#9ca3af}
+
+/* --- Report Styling --- */
+.kgrid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px}
+.kgrid .k{background:#121216;border:1px solid #1b1b22;border-radius:12px;padding:12px}
+.k .kname{font-size:12px;color:#9aa}
+.k .kval{font-size:20px;font-weight:700;margin-top:4px}
+.big-number{font-size:28px;font-weight:800;margin-top:6px}
+.chart{width:100%;height:180px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px}
+@media print{
+  body{background:#fff;color:#000}
+  .sidebar,.tabbar,.btn{display:none !important}
+  .card{box-shadow:none;border:1px solid #ddd}
+  .brand-badge{background:#000 !important;color:#fff !important}
+  .muted{color:#333}
+}
+
+
+/* Injector toggles */
+#inj_toggles button{border:1px solid #2a2a36;border-radius:10px;padding:6px 10px;background:#12121a;color:#ccd}
+#inj_toggles button.active{background:#2f4166;color:#fff;border-color:#3e5aa4}
+
+
+/* System visibility chips */
+#sys_vis .chip{border:1px solid #2a2a36;border-radius:12px;padding:6px 10px;background:#12121a;color:#ccd;cursor:pointer;user-select:none}
+#sys_vis .chip.active{outline:2px solid #3e5aa4}
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#9aa;margin:4px 0}
+.legend .dot{width:10px;height:10px;border-radius:50%}
+
+
+/* --- V5 THEME REFRESH --- */
+:root{
+  --bg:#0b0d12; --panel:#121520; --panel-2:#171b26; --ink:#dfe6ff; --muted:#9aa7c7;
+  --accent:#5b7cff; --accent-2:#8b5bff; --warn:#f08a5b; --ok:#6cd4a5; --border:#1f2636;
+}
+body{background:var(--bg); color:var(--ink);}
+.container{max-width:1100px; margin:0 auto; padding:10px 14px;}
+.card{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid var(--border);
+  border-radius:16px; padding:14px; box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.row{gap:10px; align-items:flex-start}
+hr{border:none;border-top:1px solid var(--border);margin:10px 0}
+
+/* Buttons */
+.btn{background:#12192c; border:1px solid #233053; border-radius:12px; color:var(--ink); padding:8px 12px}
+.btn:hover{background:#182342}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.warn{background:#2c1511; border-color:#4a2720; color:#ffb39a}
+
+/* Badges */
+.badge{background:#0e1426; border:1px solid #21315b; color:#cbd6ff; border-radius:10px; padding:4px 8px; display:inline-block}
+
+/* Brand */
+.brand{font-weight:800; letter-spacing:.4px}
+.brand-badge{background:var(--accent-2); color:#fff; padding:3px 8px; border-radius:10px; margin-right:8px}
+
+/* Tabs header (compact, not full-width buttons) */
+.tabbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:10px 0}
+.tabbar .tabbtn{padding:8px 12px; border-radius:12px; border:1px solid var(--border); background:#0f1424; color:#cfe1ff; cursor:pointer}
+.tabbar .tabbtn.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+
+/* Inputs */
+input, select{background:#0e1424; border:1px solid #223154; color:var(--ink); border-radius:10px; padding:7px 9px}
+
+/* Tables */
+table{width:100%; border-collapse:collapse}
+th, td{border-top:1px solid var(--border); padding:8px 10px; text-align:left}
+thead th{border-bottom:1px solid var(--border); color:#c6d2f3}
+tbody tr:hover{background:#0d1322}
+
+/* Charts */
+.chart{background:#0e1420; border:1px solid #1c2437; border-radius:14px; padding:6px}
+
+/* Constrain long rows: avoid edge-to-edge spans the user dislikes */
+.card > .row{flex-wrap:wrap}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Injector Bench</div>
+  <nav>
+    <button class="btn" onclick="showTab('flow')">Flow Test</button>
+    <button class="btn primary" onclick="showTab('char')">Characterize</button>
+    <button class="btn" onclick="showTab('logs')">Logs</button>
+    <button class="btn" onclick="showTab('cal')">Calibration</button>
+    <button class="btn" onclick="showTab('reports')">Reports</button>
+    <button class="btn" onclick="showTab('clean')">Clean</button>
+    <button class="btn" onclick="showTab('system')">System</button>
+  </nav>
+  <div class="grow"></div>
+  <div>STA: <span id="sta">—</span> | AP: <span id="ap">—</span></div>
+</header>
+<div class="wrap">
+
+  <!-- FLOW TEST (Guided Static / Dynamic; 100 mL containers) -->
+  
+  <!-- INJECTOR SELECTOR -->
+  <div id="inj_selector" class="card" style="margin-top:8px">
+    <div class="row" style="align-items:center">
+      <div class="muted">Injectors</div>
+      <div id="inj_toggles" class="row" style="gap:6px;margin-left:10px"></div>
+      <div class="grow"></div>
+      <button class="btn" onclick="inj_all()">All</button>
+      <button class="btn" onclick="inj_none()">None</button>
+    </div>
+  </div>
+
+  <div id="tab_flow" class="tab active">
+    <div class="card">
+      <h3>Flow Test — Guided</h3>
+      <p class="muted">This wizard walks you through a quick Static or Dynamic flow test using <strong>100 mL containers</strong>.</p>
+      <div id="ft_step1" class="card">
+        <h4>Step 1 — Prep</h4>
+        <ol class="muted">
+          <li>Attach <strong>100 mL</strong> cylinders (or ensure scales are empty).</li>
+          <li>Confirm fuel/solvent return is safe.</li>
+          <li>Click <em>Auto‑Tare</em> to zero all scales (optional).</li>
+        </ol>
+        <div class="row">
+          <button class="btn" onclick="ft_autotare()">Auto‑Tare Scales</button>
+          <div class="grow"></div>
+          <button class="btn primary" onclick="ft_next(2)">Continue</button>
+        </div>
+      </div>
+
+      <div id="ft_step2" class="card" style="display:none">
+        <h4>Step 2 — Configure</h4>
+        <div class="row">
+          <div>
+            <label>Mode</label>
+            <select id="ft_mode">
+              <option value="static">Static (all selected open)</option>
+              <option value="dynamic" selected>Dynamic (sequential Hz/PW)</option>
+            </select>
+          </div>
+          <div id="ft_hz_wrap"><label>Hz</label><input id="ft_hz" type="number" value="20" min="1"/></div>
+          <div id="ft_pw_wrap"><label>Pulse Width (ms)</label><input id="ft_pw" type="number" value="6" min="1" step="0.1"/></div>
+          <div><label>Duration (s)</label><input id="ft_secs" type="number" value="10" min="1"/></div>
+          <div><label>Mask (0‑255)</label><input id="ft_mask" type="number" value="255" min="0" max="255"/></div>
+        </div>
+        <div class="row">
+          <div><label>Nominal Pressure (psi)</label><input id="ft_psi" type="number" value="58"/></div>
+          <div><label>Nominal Voltage (V)</label><input id="ft_volt" type="number" value="13.8" step="0.1"/></div>
+          <div><label>Fluid Density ρ (g/mL)</label><input id="ft_rho" type="number" value="0.744" step="0.001"/></div>
+        
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Per‑Injector Tare</div>
+            <div class="row" id="ft_tare_row"></div>
+          </div>
+          <div class="card grow">
+            <div class="muted">Balance</div>
+            <div id="ft_balance">—</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Auto‑Stop at (mL, per injector)</label><input id="ft_target_ml" type="number" value="100" min="10" step="5"/></div>
+          <div><label>Averaging runs</label><input id="ft_avg_runs" type="number" value="1" min="1" max="10"/></div>
+        
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Per‑Injector Tare</div>
+            <div class="row" id="ft_tare_row"></div>
+          </div>
+          <div class="card grow">
+            <div class="muted">Balance</div>
+            <div id="ft_balance">—</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Presets</div>
+            <div class="row">
+              <button class="btn" onclick="ft_preset('quick')">Quick: 20 Hz / 6 ms / 10 s</button>
+              <button class="btn" onclick="ft_preset('slow')">Slow: 10 Hz / 8 ms / 15 s</button>
+              <button class="btn" onclick="ft_preset('static')">Static: 10 s</button>
+            </div>
+          </div>
+        
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Per‑Injector Tare</div>
+            <div class="row" id="ft_tare_row"></div>
+          </div>
+          <div class="card grow">
+            <div class="muted">Balance</div>
+            <div id="ft_balance">—</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Auto‑Stop at (mL, per injector)</label><input id="ft_target_ml" type="number" value="100" min="10" step="5"/></div>
+          <div><label>Averaging runs</label><input id="ft_avg_runs" type="number" value="1" min="1" max="10"/></div>
+        
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Per‑Injector Tare</div>
+            <div class="row" id="ft_tare_row"></div>
+          </div>
+          <div class="card grow">
+            <div class="muted">Balance</div>
+            <div id="ft_balance">—</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" onclick="ft_back(1)">Back</button>
+          <div class="grow"></div>
+          <button class="btn primary" onclick="ft_next(3)">Arm & Proceed</button>
+        </div>
+      </div>
+
+      <div id="ft_step3" class="card" style="display:none">
+        <h4>Step 3 — Run</h4>
+        <p class="muted">Click <em>Start Test</em>. The bench will test <strong>one injector at a time</strong> to maintain rail pressure, pausing between channels until pressure recovers.</p>
+        <div class="row">
+          <div class="card grow">
+            <div class="muted">Live Telemetry</div>
+            <div>V: <span id="ft_v">—</span> | P: <span id="ft_p">—</span> | T: <span id="ft_t">—</span></div>
+          </div>
+          <div class="card">
+            <div class="muted">Scales (mL)</div>
+            <table id="ft_scales"><thead><tr><th>Inj</th><th>mL</th></tr></thead><tbody></tbody></table>
+          </div>
+        
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Per‑Injector Tare</div>
+            <div class="row" id="ft_tare_row"></div>
+          </div>
+          <div class="card grow">
+            <div class="muted">Balance</div>
+            <div id="ft_balance">—</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Auto‑Stop at (mL, per injector)</label><input id="ft_target_ml" type="number" value="100" min="10" step="5"/></div>
+          <div><label>Averaging runs</label><input id="ft_avg_runs" type="number" value="1" min="1" max="10"/></div>
+        
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="card">
+            <div class="muted">Per‑Injector Tare</div>
+            <div class="row" id="ft_tare_row"></div>
+          </div>
+          <div class="card grow">
+            <div class="muted">Balance</div>
+            <div id="ft_balance">—</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn warn" onclick="ft_start()">Start Test</button>
+          <button class="btn" onclick="ft_purge()">Purge</button>
+          <button class="btn" onclick="ft_stop()">Stop</button>
+          <div class="grow"></div>
+          <button class="btn" onclick="ft_next(4)">Continue to Results</button>
+        </div>
+      </div>
+
+      <div id="ft_step4" class="card" style="display:none">
+        <h4>Step 4 — Review & Export</h4>
+        <div class="card">
+          <div class="muted">Standardized Flow Report</div>
+          <table id="ft_results"><thead><tr><th>Inj</th><th>mL</th><th>on(s)</th><th>cc/min</th><th>lb/hr</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="row">
+          <button class="btn" onclick="ft_back(3)">Back</button>
+          <div class="grow"></div>
+          <button class="btn" onclick="downloadReport()">Download CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- CHARACTERIZE (Guided; 1L for Auto) -->
+  <div id="tab_char" class="tab">
+    <div class="card"><h3>Characterize Suite (Guided)</h3>
+      <p class="muted">Use <strong>1L containers</strong> for Auto mode so the full suite completes without overflow. The wizard will prompt you to set pressure and voltage for each step.</p>
+      <div class="row">
+        <button class="btn primary" onclick="char_begin('auto')">Auto Suite</button>
+        <button class="btn" onclick="char_begin('manual')">Manual Step</button>
+      </div>
+    </div>
+
+    <div class="card" id="char_step" style="display:none">
+      <div><strong id="char_title">Step</strong></div>
+      <ol id="char_instructions" class="muted"></ol>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="char_back()">Back</button>
+        <div class="grow"></div>
+        <button class="btn primary" id="char_do" onclick="char_do_step()">Do Step</button>
+        <button class="btn" id="char_next" onclick="char_next_step()" style="display:none">Next</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Tables (P59 & Holley)</div>
+      <div class="row">
+        <div class="card grow">
+          <div class="muted">Base cc/min @ nominal</div>
+          <table id="c_base"><thead><tr><th>Inj</th><th>cc/min</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="card grow">
+          <div class="muted">P59 — cc/min vs ΔkPa (0,20,40,60,80)</div>
+          <table id="c_p59"><thead></thead><tbody></tbody></table>
+        </div>
+        <div class="card grow">
+          <div class="muted">Holley — cc/min vs Volts (9–15)</div>
+          <table id="c_hol"><thead></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div class="card grow">
+          <div class="muted">P59 — Injector Offset (ms) vs Battery Voltage</div>
+          <table id="c_p59v"><thead></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+        <button class="btn" onclick="char_refresh()">Refresh</button>
+        <div class="grow"></div>
+        <button class="btn" onclick="downloadReport()">Download CSV</button>
+      </div>
+
+    <div class="card">
+      <h3>Copy/Paste Exporters</h3>
+      <p class="muted">These fields are TAB‑delimited so you can paste directly into HPTuners P59 and Holley. The header shows the exact breakpoints.</p>
+      <div class="row">
+        <div class="card grow">
+          <div><strong>P59 — IFR (cc/min) vs ΔkPa</strong></div>
+          <div class="muted" id="bp_p59_ifr"></div>
+          <textarea id="exp_p59_ifr" style="width:100%;height:140px"></textarea>
+          <div style="margin-top:8px"><button class="btn" onclick="copyArea('exp_p59_ifr')">Copy IFR</button></div>
+        </div>
+        <div class="card grow">
+          <div><strong>P59 — Injector Offset (ms) vs Battery Voltage</strong></div>
+          <div class="muted" id="bp_p59_off"></div>
+          <textarea id="exp_p59_off" style="width:100%;height:140px"></textarea>
+          <div style="margin-top:8px"><button class="btn" onclick="copyArea('exp_p59_off')">Copy Offset</button></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card grow">
+          <div><strong>P59 — Short Pulse Adder (ms) vs PW</strong></div>
+          <div class="muted" id="bp_p59_spa"></div>
+          <textarea id="exp_p59_spa" style="width:100%;height:120px"></textarea>
+          <div style="margin-top:8px"><button class="btn" onclick="copyArea('exp_p59_spa')">Copy P59 SPA</button></div>
+        </div>
+        <div class="card grow">
+          <div><strong>Holley — Injector Off Time (ms) vs Battery Voltage</strong></div>
+          <div class="muted" id="bp_hol_off"></div>
+          <textarea id="exp_hol_off" style="width:100%;height:140px"></textarea>
+          <div style="margin-top:8px"><button class="btn" onclick="copyArea('exp_hol_off')">Copy Holley Offset</button></div>
+        </div>
+        <div class="card grow">
+          <div><strong>P59 — IFR (lb/hr) vs ΔkPa</strong></div>
+          <div class="muted" id="bp_p59_ifr_lbhr"></div>
+          <textarea id="exp_p59_ifr_lbhr" style="width:100%;height:140px"></textarea>
+          <div style="margin-top:8px"><button class="btn" onclick="copyArea('exp_p59_ifr_lbhr')">Copy IFR (lb/hr)</button></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card grow">
+          <div><strong>Holley — Nominal Injector Flow (lb/hr)</strong></div>
+          <div class="muted">Average at ΔkPa=0 & nominal ρ</div>
+          <textarea id="exp_hol_ifr_nom" style="width:100%;height:60px"></textarea>
+          <div style="margin-top:8px"><button class="btn" onclick="copyArea('exp_hol_ifr_nom')">Copy Holley IFR</button></div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+  </div>
+
+
+  <!-- CALIBRATION -->
+  <div id="tab_cal" class="tab">
+    <div class="card"><h3>Calibration</h3>
+      <div class="row">
+        <div class="card grow">
+          <h4>Scales</h4>
+          <div class="row">
+            <button class="btn" onclick="cal_tare_all()">Tare All</button>
+            <button class="btn" onclick="cal_build_tare()">Show Per‑Injector Tare</button>
+          </div>
+          <div id="cal_tare_row" class="row" style="margin-top:6px"></div>
+          <div class="row" style="margin-top:10px">
+            <div><label>Span mass (g)</label><input id="cal_span_g" type="number" value="100"/></div>
+            <button class="btn" onclick="cal_span_all()">Capture Span on All</button>
+          </div>
+        </div>
+        <div class="card grow">
+          <h4>Fluid & Nominals</h4>
+          <div class="row"><div><label>Test Fluid</label><select id="cal_fluid"><option>Gasoline</option><option>E85</option><option>Diesel</option><option>Kerosene</option><option>n-Heptane</option><option>Water</option><option>Custom</option></select></div><div><label>Custom ρ @20°C (g/mL)</label><input id="cal_rho_c" type="number" value="0.744" step="0.001"/></div><div><label>α (per °C)</label><input id="cal_alpha" type="number" value="0.001" step="0.0001"/></div></div>
+          <div class="row">
+            <div><label>Fluid Density ρ (g/mL)</label><input id="cal_rho" type="number" value="0.744" step="0.001"/></div>
+            <div><label>Nominal PSI</label><input id="cal_psi" type="number" value="58"/></div>
+            <div><label>Nominal V</label><input id="cal_v" type="number" value="13.8" step="0.1"/></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+            <button class="btn primary" onclick="cal_save_nominals()">Save</button>
+          </div>
+        </div>
+        <div class="card grow">
+          <h4>Sensors</h4>
+          <div class="row">
+            <div><label>Volt zero</label><input id="cal_vz" type="number" value="0" step="0.01"/></div>
+            <div><label>Volt span</label><input id="cal_vs" type="number" value="1" step="0.01"/></div>
+          </div>
+          <div class="row">
+            <div><label>Press zero</label><input id="cal_pz" type="number" value="0" step="0.01"/></div>
+            <div><label>Press span</label><input id="cal_ps" type="number" value="1" step="0.01"/></div>
+          </div>
+          <div class="row">
+            <div><label>Temp zero</label><input id="cal_tz" type="number" value="0" step="0.01"/></div>
+            <div><label>Temp span</label><input id="cal_ts" type="number" value="1" step="0.01"/></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+            <button class="btn" onclick="cal_save_sensors()">Save Sensors</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- REPORTS -->
+  <div id="tab_reports" class="tab">
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div class="brand"><span class="brand-badge">V5.3</span> Injector Bench — Session Report</div>
+        <div class="grow"></div>
+        <button class="btn" onclick="rep_print()">Print</button>
+        <button class="btn" onclick="rep_download_html()">Download HTML</button>
+        <button class="btn" onclick="rep_download_json()">Download JSON</button>
+        <button class="btn warn" onclick="rep_clear()">Clear Session</button>
+      </div>
+      <div class="muted" id="rep_meta">No session loaded. Click "Refresh" to load from device.</div>
+
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="rep_refresh_from_device()">Refresh from Device</button>
+        <div class="grow"></div>
+        <div class="muted">Reports persist in your browser until cleared.</div>
+      </div>
+    </div>
+
+    <div id="rep_body" style="display:none">
+      <div class="row">
+        <div class="card grow">
+          <div class="muted">Summary</div>
+          <div id="rep_summary" class="kgrid"></div>
+        </div>
+        <div class="card">
+          <div class="muted">Uniformity</div>
+          <div id="rep_uniformity" class="big-number">—</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="card grow">
+          <div class="muted">cc/min per Injector</div>
+          <div id="chart_ccmin" class="chart"></div>
+        </div>
+        <div class="card grow">
+          <div class="muted">lb/hr per Injector</div>
+          <div id="chart_lbhr" class="chart"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="card grow">
+          <div class="muted">mL Collected</div>
+          <div id="chart_ml" class="chart"></div>
+        </div>
+        <div class="card grow">
+          <div class="muted">On-Time (s)</div>
+          <div id="chart_on" class="chart"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Raw Table</div>
+        <table id="rep_table"><thead><tr><th>Inj</th><th>mL</th><th>on(s)</th><th>cc/min</th><th>lb/hr</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <div class="muted">Characterize (if available)</div>
+        <div id="rep_char_tables" class="grid2"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CLEAN -->
+  <div id="tab_clean" class="tab">
+    <div class="card">
+      <h3>Clean — Guided</h3><p class="muted">Cleaning operations can address multiple injectors at once. Measurement features (Flow Bench & Characterize) run one‑hot automatically to preserve rail pressure.</p>
+      <p class="muted">A suite of cleaning operations using your solvent loop. Always vent to a safe container.</p>
+      <div class="row">
+        <div class="card grow">
+          <h4>Setup</h4>
+          <div class="row">
+            <div><label>Solvent</label><input id="cl_solvent" value="Cleaner"/></div>
+            <div><label>Mask (0–255)</label><input id="cl_mask" type="number" value="255" min="0" max="255"/></div>
+          </div>
+          <div style="margin-top:8px">
+            <label><input type="checkbox" id="cl_safe"/> I confirm lines are vented and collection is safe</label>
+          </div>
+          <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+            <button class="btn" onclick="cl_tare_all()">Tare Scales</button>
+            <button class="btn" onclick="cl_status()">Status</button>
+          </div>
+        </div>
+        <div class="card grow">
+          <h4>Quick Actions</h4>
+          <div class="row">
+            <button class="btn" onclick="cl_prime()">Prime (gentle)</button>
+            <button class="btn" onclick="cl_purge()">Purge (static)</button>
+            <button class="btn" onclick="cl_pulse()">Pulse (dynamic)</button>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <button class="btn" onclick="cl_soak(300)">Soak 5 min</button>
+            <button class="btn" onclick="cl_recirc(60)">Recirculate 60 s</button>
+            <button class="btn" onclick="cl_backflush(30)">Backflush 30 s</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Routine Builder</h4>
+        <p class="muted">Queue multiple steps and run them in sequence.</p>
+        <div class="row">
+          <select id="cl_step_type">
+            <option value="prime">Prime</option>
+            <option value="purge">Purge (static)</option>
+            <option value="pulse">Pulse (dynamic)</option>
+            <option value="soak">Soak (timer)</option>
+            <option value="recirc">Recirculate (pump)</option>
+            <option value="backflush">Backflush (valve)</option>
+          </select>
+          <div><label>Hz</label><input id="cl_hz" type="number" value="10" min="1"/></div>
+          <div><label>PW (ms)</label><input id="cl_pw" type="number" value="4" min="0.1" step="0.1"/></div>
+          <div><label>Seconds</label><input id="cl_sec" type="number" value="10" min="1"/></div>
+          <button class="btn" onclick="cl_add()">Add Step</button>
+        </div>
+        <div id="cl_queue" class="muted" style="margin-top:6px">Queue empty.</div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Rail Pressure Guard (psi under nominal)</label><input id="ft_psi_tol" type="number" value="5" min="0" step="1"/></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="ft_prime" checked/> Prime before test</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn warn" onclick="cl_clear()">Clear Queue</button>
+          <div class="grow"></div>
+          <button class="btn primary" onclick="cl_run()">Run Queue</button>
+          <button class="btn" onclick="cl_stop()">Stop</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Progress</h4>
+        <div id="cl_progress">Idle.</div>
+      </div>
+    </div>
+  </div>
+
+
+  
+  <!-- SYSTEM (Live Telemetry) -->
+  <div id="tab_system" class="tab">
+    <div class="card">
+      <h3>System — Live Telemetry</h3>
+      <p class="muted">Watch all sensors in real time. Use the toggles below to show/hide channels and adjust ranges.</p>
+      <div class="row" style="align-items:flex-end; flex-wrap:wrap; gap:8px">
+        <div><label>Polling interval (ms)</label><input id="sys_ivl" type="number" value="500" min="100" step="100"/></div>
+        <div><label>Window (points)</label><input id="sys_pts" type="number" value="240" min="60" step="60"/></div>
+        <div><label>Smooth (points)</label><input id="sys_smooth" type="number" value="1" min="1" step="1"/></div>
+        <div class="grow"></div>
+        <button class="btn" onclick="sys_start()">Start</button>
+        <button class="btn" onclick="sys_stop()">Stop</button>
+        <button class="btn" onclick="sys_clear()">Clear</button>
+        <button class="btn" onclick="sys_csv()">Download CSV</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Visibility</h4>
+      <div id="sys_vis" class="row" style="gap:6px; flex-wrap:wrap"></div>
+    </div>
+
+    <div class="row">
+      <div class="card grow">
+        <div class="muted">Voltage (V)</div>
+        <div class="row" style="gap:8px">
+          <div><label>Y min</label><input id="rng_v_min" type="number" step="0.1"/></div>
+          <div><label>Y max</label><input id="rng_v_max" type="number" step="0.1"/></div>
+          <button class="btn" onclick="sys_set_auto('v')">Auto</button>
+        </div>
+        <div id="sys_chart_v" class="chart"></div>
+      </div>
+      <div class="card grow">
+        <div class="muted">Pressure (psi)</div>
+        <div class="row" style="gap:8px">
+          <div><label>Y min</label><input id="rng_p_min" type="number" step="0.1"/></div>
+          <div><label>Y max</label><input id="rng_p_max" type="number" step="0.1"/></div>
+          <button class="btn" onclick="sys_set_auto('p')">Auto</button>
+        </div>
+        <div id="sys_chart_p" class="chart"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="card grow">
+        <div class="muted">Temperature (°C)</div>
+        <div class="row" style="gap:8px">
+          <div><label>Y min</label><input id="rng_t_min" type="number" step="0.1"/></div>
+          <div><label>Y max</label><input id="rng_t_max" type="number" step="0.1"/></div>
+          <button class="btn" onclick="sys_set_auto('t')">Auto</button>
+        </div>
+        <div id="sys_chart_t" class="chart"></div>
+      </div>
+      <div class="card grow">
+        <div class="muted">Scales (mL) — 8 Channels</div>
+        <div class="row" style="gap:8px">
+          <div><label>Y min</label><input id="rng_s_min" type="number" step="0.1"/></div>
+          <div><label>Y max</label><input id="rng_s_max" type="number" step="0.1"/></div>
+          <button class="btn" onclick="sys_set_auto('s')">Auto</button>
+        </div>
+        <div id="sys_chart_s" class="chart"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Pump Control</div>
+        <div class="row"><div id="sys_pump_badge" class="badge">Pump: —</div><button class="btn" onclick="sys_pump(1)">Start Pump</button><button class="btn" onclick="sys_pump(0)">Stop Pump</button></div>
+      </div>
+      <div class="card">
+        <div class="muted">Snapshot</div>
+      <div id="sys_snap" class="kgrid"></div>
+    </div>
+  </div>
+
+    <div class="row">
+      <div class="card grow">
+        <div class="muted">Temperature (°C)</div>
+        <div id="sys_chart_t" class="chart"></div>
+      </div>
+      <div class="card">
+        <div class="muted">Pump Control</div>
+        <div class="row"><div id="sys_pump_badge" class="badge">Pump: —</div><button class="btn" onclick="sys_pump(1)">Start Pump</button><button class="btn" onclick="sys_pump(0)">Stop Pump</button></div>
+      </div>
+      <div class="card">
+        <div class="muted">Snapshot</div>
+        <div id="sys_snap" class="kgrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGS -->
+  <div id="tab_logs" class="tab">
+    <div class="card"><h3>Logs</h3>
+      <button class="btn" onclick="load_logs()">Refresh</button>
+      <ul id="log_list"></ul>
+    </div>
+  </div>
+
+</div>
+<script>
+function $(id){return document.getElementById(id)}
+function showTab(which){
+  ['flow','char','logs'].forEach(t=>$('tab_'+t).classList.toggle('active', t===which));
+}
+async function net(){ try{ let j = await (await fetch('/api/net')).json(); $('sta').textContent=j.sta_ip||'—'; $('ap').textContent=j.ap_ip||'—'; }catch(e){} }
+setInterval(net, 3000); net();
+
+// ---- FLOW TEST ----
+let fPoll=null;
+async function flow_start(){
+  const mode = $('flow_mode').value;
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({psi_nom:parseFloat($('flow_psi').value),volt_nom:parseFloat($('flow_volt').value),fluid:'TestFluid'})});
+  await fetch('/api/calibration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rho:parseFloat($('flow_rho').value)})});
+  const body={mode,params:{hz:parseFloat($('flow_hz').value),pw_ms:parseFloat($('flow_pw').value),seconds:parseInt($('flow_secs').value),mask:parseInt($('flow_mask').value)}};
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if (fPoll) clearInterval(fPoll);
+  fPoll=setInterval(async()=>{
+    try{let t=await (await fetch('/api/telemetry')).json();
+      $('f_v').textContent=t.voltage; $('f_p').textContent=t.pressure; $('f_t').textContent=t.tempC;
+      const tb=$('f_scales').querySelector('tbody'); tb.innerHTML=''; (t.scales||[]).forEach((v,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td>${(v||0).toFixed(1)}</td>`;tb.appendChild(tr)});
+    }catch(e){}
+  },500);
+}
+async function flow_stop(){ await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){}; if(fPoll){clearInterval(fPoll); fPoll=null;} }
+async function flow_report(){
+  let j=await (await fetch('/api/report')).json();
+  const mls=j.flow_mL||[], on=j.on_time_s||[], cc=j.cc_min||[], lb=j.lbs_hr||[];
+  const tb=$('f_results').querySelector('tbody'); tb.innerHTML='';
+  for(let i=0;i<8;i++){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${(mls[i]||0).toFixed(1)}</td><td>${(on[i]||0).toFixed(2)}</td><td>${(cc[i]||0).toFixed(1)}</td><td>${(lb[i]||0).toFixed(1)}</td>`; tb.appendChild(tr); }
+}
+
+// ---- CHARACTERIZE SUITE ----
+async function char_begin(){
+  // Pump ON + Prime
+  const sec = parseInt(($('set_prime_sec')?.value)||'5');
+  const pulse = ( ($('set_prime_pulse')?.value)||'1' ) === '1';
+  $('char_status').textContent = 'Priming…';
+  const ok = await prime_sequence(sec, pulse);
+  if(!ok){ $('char_status').textContent = 'Prime failed — check pump/rail.'; throw new Error('prime_failed'); }
+  $('char_status').textContent = 'Testing…';
+}
+async function char_end(success=true){
+  $('char_status').textContent = success ? 'Complete.' : 'Stopped.';
+  try{ await sys_pump(0);}catch(e){}
+}
+
+// ---- CHARACTERIZE SUITE ----
+
+// ---- Characterize: one‑hot helper ----
+async function char_start_onehot(mode, params){
+  const inj = selectedInjectors();
+  for(const i of inj){
+    await wait_pressure_ok();
+    const body = {mode, params: Object.assign({}, params, {mask:(1<<i)})};
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const t_end = Date.now() + ((params.seconds||10)+1)*1000;
+    while(Date.now() < t_end){ await new Promise(r=>setTimeout(r,250)); }
+    await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+    // Optionally, could collect per-injector arrays here similar to Flow Bench if needed
+  }
+}
+
+
+async function run_pw_sweep_and_fit(volts_row){
+  const PWS=[2.0,2.5,3.0,3.5,4.0,5.0,6.0];
+  // arm P59V
+  await fetch('/api/suite/arm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase:4,index:volts_row})});
+  // reset client-side sweep (no RPC needed)
+  for (let i=0;i<PWS.length;i++){
+    const pw=PWS[i], seconds=5, hz=20;
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz,pw_ms:pw,seconds,mask:inj_mask()}})});
+    await new Promise(r=>setTimeout(r,(seconds+1)*1000));
+    await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+    await fetch('/api/suite/add_p59v_point',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pw_ms:pw,hz,seconds,volt_row:volts_row})});
+  }
+  await fetch('/api/suite/fit_p59v',{method:'POST'});
+}
+
+let char_mode='auto';
+const VOLTS=[9.0,10.5,12.0,13.5,14.0,15.0];
+const KPAS=[0,20,40,60,80];
+let char_stage = 0; // 0=base, 1=Holley volts (cc/min), 2=P59 volts (offset), 3=P59 kPa, 4=Short Pulse Adder
+let hol_idx = 0, p59v_idx = 0, p59_idx = 0;
+
+function char_begin(mode){
+  char_mode=mode; char_stage=0; hol_idx=0; p59_idx=0;
+  $('char_step').style.display='block';
+  render_suite_status();
+  char_render_step();
+}
+
+function char_back(){ $('char_step').style.display='none'; }
+
+async function render_suite_status(){
+  let j = await (await fetch('/api/report')).json(); // includes suite_status
+  // Render tables
+  render_suite_tables(j);
+}
+
+// Renders the next prompt
+function char_render_step(){
+  const title=$('char_title'), list=$('char_instructions'); list.innerHTML='';
+  $('char_do').style.display='inline-block'; $('char_next').style.display='none';
+  if (char_stage===0){
+    title.textContent='Base Measurement (Nominal PSI & V)';
+    addLI(list,'Set rail pressure to nominal (psi).');
+    addLI(list,'Set PSU to nominal voltage (V).');
+    addLI(list,(char_mode==='auto'?'Ensure 1L containers are attached.':'Use 100 mL containers.'));
+    addLI(list,'Click "Do Step" to run a 10s dynamic test at 20 Hz, 6 ms.');
+  } else if (char_stage===1){
+    title.textContent=`Holley Voltage Row ${hol_idx+1} of ${VOLTS.length}`;
+    addLI(list,`Set PSU to ${VOLTS[hol_idx].toFixed(1)} V.`);
+    addLI(list,'Keep pressure at nominal.');
+    addLI(list,'Click "Do Step" to run and record this voltage row.');
+  } else if (char_stage===2){
+    title.textContent=`P59 Voltage Offset Row ${p59v_idx+1} of ${VOLTS.length}`;
+    addLI(list,`Set PSU to ${VOLTS[p59v_idx].toFixed(1)} V.`);
+    addLI(list,'Keep pressure at nominal.');
+    addLI(list,'Click "Do Step" and the bench will automatically run a short PW sweep (2–6 ms) and compute injector offset at this voltage.');
+  } else if (char_stage===3) {
+    title.textContent=`P59 ΔkPa Row ${p59_idx+1} of ${KPAS.length}`;
+    const kpa = KPAS[p59_idx]; const psi_add = (kpa/6.89476);
+    addLI(list,`Increase rail pressure by Δ${kpa} kPa (~ +${psi_add.toFixed(1)} psi) from nominal.`);
+    addLI(list,'Keep voltage at nominal.');
+    addLI(list,'Click "Do Step" to run and record this ΔkPa row.');
+  }
+}
+
+function addLI(ol, text){ const li=document.createElement('li'); li.textContent=text; ol.appendChild(li); }
+
+async function char_do_step(){
+  if (char_stage===0){
+    await fetch('/api/suite/arm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase:1,index:0})}); // SP_BASE
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz:20,pw_ms:6,seconds:10,mask:inj_mask()}})});
+    await new Promise(r=>setTimeout(r,11000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+    await fetch('/api/suite/commit',{method:'POST'});
+  } else if (char_stage===1){
+    await fetch('/api/suite/arm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase:2,index:hol_idx})}); // SP_HOLLEY
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz:20,pw_ms:6,seconds:10,mask:inj_mask()}})});
+    await new Promise(r=>setTimeout(r,11000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+    await fetch('/api/suite/commit',{method:'POST'});
+  } else if (char_stage===2){
+    await run_pw_sweep_and_fit(p59v_idx);
+  } else if (char_stage===3){
+    await fetch('/api/suite/arm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase:3,index:p59_idx})});
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz:20,pw_ms:6,seconds:10,mask:inj_mask()}})});
+    await new Promise(r=>setTimeout(r,11000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+    await fetch('/api/suite/commit',{method:'POST'});
+  } else if (char_stage===4){
+    // SPA sweep: run bins at nominal V&PSI
+    const BINS=[0.8,1.2,1.6,2.0,2.4,2.8];
+    for (let i=0;i<BINS.length;i++){
+      const pw=BINS[i], seconds=5, hz=20;
+      await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz,pw_ms:pw,seconds,mask:inj_mask()}})});
+      await new Promise(r=>setTimeout(r,(seconds+1)*1000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+      await fetch('/api/suite/spa_point',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bin_index:i,hz,seconds,pw_ms:pw})});
+    }
+    await fetch('/api/suite/spa_fit',{method:'POST'});
+  }
+  await render_suite_status();
+  $('char_do').style.display='none'; $('char_next').style.display='inline-block';
+}
+
+function char_next_step(){
+  if (char_stage===0){ char_stage=1; hol_idx=0; }
+  else if (char_stage===1){ hol_idx++; if (hol_idx>=VOLTS.length) { char_stage=2; p59v_idx=0; } }
+  else if (char_stage===2){ p59v_idx++; if (p59v_idx>=VOLTS.length) { char_stage=3; p59_idx=0; } }
+  else if (char_stage===3) { p59_idx++; if (p59_idx>=KPAS.length) { char_stage=4; } }
+  else { $('char_step').style.display='none'; return; }
+  char_render_step();
+}
+
+  if (char_stage===0){ char_stage=1; hol_idx=0; }
+  else if (char_stage===1){ hol_idx++; if (hol_idx>=VOLTS.length) { char_stage=2; p59_idx=0; } }
+  else if (char_stage===3) { p59_idx++; if (p59_idx>=KPAS.length) { char_stage=4; } }
+  else { $('char_step').style.display='none'; return; }
+  char_render_step();
+}
+
+async function char_refresh(){ await render_suite_status(); }
+
+
+// ---- Guided Flow Test (Static/Dynamic) ----
+let ft_poll=null;
+
+function ft_next(n){ for(let i=1;i<=4;i++) $('ft_step'+i).style.display = (i===n?'block':'none'); }
+function ft_back(n){ ft_next(n); }
+
+function ft_mode_update(){
+  const m=$('ft_mode').value;
+  $('ft_hz_wrap').style.display = (m==='dynamic')?'block':'none';
+  $('ft_pw_wrap').style.display = (m==='dynamic')?'block':'none';
+}
+function ft_preset(which){
+  if(which==='quick'){ $('ft_mode').value='dynamic'; $('ft_hz').value=20; $('ft_pw').value=6; $('ft_secs').value=10; }
+  if(which==='slow'){ $('ft_mode').value='dynamic'; $('ft_hz').value=10; $('ft_pw').value=8; $('ft_secs').value=15; }
+  if(which==='static'){ $('ft_mode').value='static'; $('ft_secs').value=10; }
+  ft_mode_update();
+}
+$('ft_mode') && $('ft_mode').addEventListener('change', ft_mode_update);
+ft_mode_update();
+
+async function ft_autotare(){
+  try{
+    await fetch('/api/scales', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({tare:true})});
+  }catch(e){}
+}
+
+async function ft_arm_settings(){
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({psi_nom:parseFloat($('ft_psi').value),volt_nom:parseFloat($('ft_volt').value),fluid:'TestFluid'})});
+  await fetch('/api/calibration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rho:parseFloat($('ft_rho').value)})});
+}
+
+
+// ---- One‑hot Flow Bench execution ----
+function selectedInjectors(){
+  const list=[]; for(let i=0;i<8;i++){ if($('inj_btn_'+i)?.classList.contains('active')) list.push(i); }
+  return list.length? list:[0]; // fallback to #1
+}
+async function wait_pressure_ok(){
+  const tol = parseFloat($('ft_psi_tol').value||'5');
+  // nominal from settings card (we stored in UI when posting, but query telemetry until ≥ (nom - tol))
+  const nom = parseFloat($('ft_psi').value||'58');
+  let tries=0;
+  while(true){
+    try{
+      const t=await (await fetch('/api/telemetry')).json();
+      if(typeof t.pressure==='number' && t.pressure >= (nom - tol)) return;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,400));
+    if(++tries>300) return; // safety escape ~2min
+  }
+}
+
+// Accumulator for Flow Bench per-injector results in this session
+let FB = null;
+
+async function ft_start(){
+  try{ await sys_pump(1);}catch(e){}
+  if($('ft_prime')?.checked){ const sec=parseInt(($('set_prime_sec')?.value)||'5'); const pulse=( ($('set_prime_pulse')?.value)||'1')==='1'; const ok=await prime_sequence(sec,pulse); if(!ok){ alert('Prime failed — check pump/rail.'); return; } }
+  await ft_arm_settings();
+  const mode = $('ft_mode').value;
+  const hz = parseFloat($('ft_hz').value||'20');
+  const pw = parseFloat($('ft_pw').value||'6');
+  const seconds = parseInt($('ft_secs').value||'10');
+  const targets = parseFloat($('ft_target_ml').value||'0');
+  const inj = selectedInjectors();
+
+  FB = { timestamp: Date.now(), mode, psi_nom: parseFloat($('ft_psi').value||'58'), volt_nom: parseFloat($('ft_volt').value||'13.8'), 
+         rho: parseFloat($('ft_rho').value||'0.744'), cc_min:new Array(8).fill(0), lbs_hr:new Array(8).fill(0), flow_mL:new Array(8).fill(0), on_time_s:new Array(8).fill(0)};
+
+  // Iterate over injectors one at a time
+  for(const i of inj){
+    await wait_pressure_ok();
+    const mask = (1<<i);
+    const body = (mode==='dynamic')
+      ? {mode, params:{hz:hz, pw_ms:pw, seconds:seconds, mask}}
+      : {mode:'static', params:{seconds:seconds, mask}};
+
+    // Run
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    // Poll during this injector run
+    const t_end = Date.now() + (seconds+1)*1000;
+    while(Date.now() < t_end){
+      try{
+        const t=await (await fetch('/api/telemetry')).json();
+        $('ft_v').textContent=t.voltage??'—'; $('ft_p').textContent=t.pressure??'—'; $('ft_t').textContent=t.tempC??'—';
+        const tb=$('ft_scales').querySelector('tbody'); tb.innerHTML='';
+        (t.scales||[]).forEach((v,idx)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${idx+1}</td><td>${(v??0).toFixed(1)}</td>`; tb.appendChild(tr); });
+      }catch(e){}
+      await new Promise(r=>setTimeout(r,250));
+    }
+    await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+
+    // Grab the device's last report and take channel i values
+    try{
+      const r=await (await fetch('/api/report')).json();
+      FB.flow_mL[i] = (r.flow_mL||[])[i]||0;
+      FB.on_time_s[i] = (r.on_time_s||[])[i]||0;
+      FB.cc_min[i]   = (r.cc_min||[])[i]||0;
+      FB.lbs_hr[i]   = (r.lbs_hr||[])[i]||0;
+    }catch(e){}
+  }
+
+  // Render Review and push into Reports session
+  const tb=$('ft_results').querySelector('tbody'); tb.innerHTML='';
+  for(let i=0;i<8;i++){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${(FB.flow_mL[i]||0).toFixed(1)}</td><td>${(FB.on_time_s[i]||0).toFixed(2)}</td><td>${(FB.cc_min[i]||0).toFixed(1)}</td><td>${(FB.lbs_hr[i]||0).toFixed(1)}</td>`; tb.appendChild(tr); }
+
+  // Save to Reports session locally and show
+  const sess = { timestamp: FB.timestamp, mode: mode, psi_nom: FB.psi_nom, volt_nom: FB.volt_nom, rho: FB.rho,
+                 flow_mL: FB.flow_mL, on_time_s: FB.on_time_s, cc_min: FB.cc_min, lbs_hr: FB.lbs_hr,
+                 telemetry: await (await fetch('/api/telemetry')).json() };
+  if(typeof rep_save_session==='function'){ rep_save_session(sess); rep_render(sess); }
+  ft_next(4);
+  try{ await sys_pump(0);}catch(e){}
+}
+
+async function ft_start(){
+  try{ await sys_pump(1);}catch(e){}
+  if($('ft_prime')?.checked){ const sec=parseInt(($('set_prime_sec')?.value)||'5'); const pulse=( ($('set_prime_pulse')?.value)||'1')==='1'; const ok=await prime_sequence(sec,pulse); if(!ok){ alert('Prime failed — check pump/rail.'); return; } } // (old impl shadowed by new above)
+  await ft_arm_settings();
+  const mode = $('ft_mode').value;
+  const body={mode,params:{hz:parseFloat($('ft_hz').value||'20'),pw_ms:parseFloat($('ft_pw').value||'6'),seconds:parseInt($('ft_secs').value||'10'),mask:parseInt($('ft_mask').value||'255')}};
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(ft_poll) clearInterval(ft_poll);
+  ft_poll=setInterval(async()=>{
+    try{
+      const t=await (await fetch('/api/telemetry')).json();
+      $('ft_v').textContent=t.voltage??'—'; $('ft_p').textContent=t.pressure??'—'; $('ft_t').textContent=t.tempC??'—';
+      const tb=$('ft_scales').querySelector('tbody'); tb.innerHTML='';
+      (t.scales||[]).forEach((v,i)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${(v??0).toFixed(1)}</td>`; tb.appendChild(tr); });
+    }catch(e){}
+  },500);
+}
+
+async function ft_stop(){
+  await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+  if(ft_poll){ clearInterval(ft_poll); ft_poll=null; }
+  // auto-build report table
+  const j=await (await fetch('/api/report')).json();
+  const mls=j.flow_mL||[], on=j.on_time_s||[], cc=j.cc_min||[], lb=j.lbs_hr||[];
+  const tb=$('ft_results').querySelector('tbody'); tb.innerHTML='';
+  for(let i=0;i<8;i++){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${(mls[i]||0).toFixed(1)}</td><td>${(on[i]||0).toFixed(2)}</td><td>${(cc[i]||0).toFixed(1)}</td><td>${(lb[i]||0).toFixed(1)}</td>`; tb.appendChild(tr); }
+}
+
+
+// ---- Flow Bench extras ----
+function build_tare_buttons(prefix, handler){
+  const row=$(prefix); row.innerHTML='';
+  for(let i=0;i<8;i++){ const b=document.createElement('button'); b.className='btn'; b.textContent='Inj '+(i+1); b.onclick=()=>handler(i); row.appendChild(b); }
+}
+function ft_build_tare(){ build_tare_buttons('ft_tare_row', async (i)=>{ await fetch('/api/scales/tare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ch:i})}); }); }
+function cal_build_tare(){ build_tare_buttons('cal_tare_row', async (i)=>{ await fetch('/api/scales/tare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ch:i})}); }); }
+ft_build_tare();
+
+async function ft_autostop_check(target){
+  try{
+    const t=await (await fetch('/api/telemetry')).json();
+    const arr=t.scales||[];
+    let done=true;
+    for(let i=0;i<8;i++){ if ((arr[i]||0) < target) { done=false; break; } }
+    if(done){ await ft_stop(); }
+  }catch(e){}
+}
+
+
+// ---- One‑hot Flow Bench execution ----
+function selectedInjectors(){
+  const list=[]; for(let i=0;i<8;i++){ if($('inj_btn_'+i)?.classList.contains('active')) list.push(i); }
+  return list.length? list:[0]; // fallback to #1
+}
+async function wait_pressure_ok(){
+  const tol = parseFloat($('ft_psi_tol').value||'5');
+  // nominal from settings card (we stored in UI when posting, but query telemetry until ≥ (nom - tol))
+  const nom = parseFloat($('ft_psi').value||'58');
+  let tries=0;
+  while(true){
+    try{
+      const t=await (await fetch('/api/telemetry')).json();
+      if(typeof t.pressure==='number' && t.pressure >= (nom - tol)) return;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,400));
+    if(++tries>300) return; // safety escape ~2min
+  }
+}
+
+// Accumulator for Flow Bench per-injector results in this session
+let FB = null;
+
+async function ft_start(){
+  try{ await sys_pump(1);}catch(e){}
+  if($('ft_prime')?.checked){ const sec=parseInt(($('set_prime_sec')?.value)||'5'); const pulse=( ($('set_prime_pulse')?.value)||'1')==='1'; const ok=await prime_sequence(sec,pulse); if(!ok){ alert('Prime failed — check pump/rail.'); return; } }
+  await ft_arm_settings();
+  const mode = $('ft_mode').value;
+  const hz = parseFloat($('ft_hz').value||'20');
+  const pw = parseFloat($('ft_pw').value||'6');
+  const seconds = parseInt($('ft_secs').value||'10');
+  const targets = parseFloat($('ft_target_ml').value||'0');
+  const inj = selectedInjectors();
+
+  FB = { timestamp: Date.now(), mode, psi_nom: parseFloat($('ft_psi').value||'58'), volt_nom: parseFloat($('ft_volt').value||'13.8'), 
+         rho: parseFloat($('ft_rho').value||'0.744'), cc_min:new Array(8).fill(0), lbs_hr:new Array(8).fill(0), flow_mL:new Array(8).fill(0), on_time_s:new Array(8).fill(0)};
+
+  // Iterate over injectors one at a time
+  for(const i of inj){
+    await wait_pressure_ok();
+    const mask = (1<<i);
+    const body = (mode==='dynamic')
+      ? {mode, params:{hz:hz, pw_ms:pw, seconds:seconds, mask}}
+      : {mode:'static', params:{seconds:seconds, mask}};
+
+    // Run
+    await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    // Poll during this injector run
+    const t_end = Date.now() + (seconds+1)*1000;
+    while(Date.now() < t_end){
+      try{
+        const t=await (await fetch('/api/telemetry')).json();
+        $('ft_v').textContent=t.voltage??'—'; $('ft_p').textContent=t.pressure??'—'; $('ft_t').textContent=t.tempC??'—';
+        const tb=$('ft_scales').querySelector('tbody'); tb.innerHTML='';
+        (t.scales||[]).forEach((v,idx)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${idx+1}</td><td>${(v??0).toFixed(1)}</td>`; tb.appendChild(tr); });
+      }catch(e){}
+      await new Promise(r=>setTimeout(r,250));
+    }
+    await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+
+    // Grab the device's last report and take channel i values
+    try{
+      const r=await (await fetch('/api/report')).json();
+      FB.flow_mL[i] = (r.flow_mL||[])[i]||0;
+      FB.on_time_s[i] = (r.on_time_s||[])[i]||0;
+      FB.cc_min[i]   = (r.cc_min||[])[i]||0;
+      FB.lbs_hr[i]   = (r.lbs_hr||[])[i]||0;
+    }catch(e){}
+  }
+
+  // Render Review and push into Reports session
+  const tb=$('ft_results').querySelector('tbody'); tb.innerHTML='';
+  for(let i=0;i<8;i++){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${(FB.flow_mL[i]||0).toFixed(1)}</td><td>${(FB.on_time_s[i]||0).toFixed(2)}</td><td>${(FB.cc_min[i]||0).toFixed(1)}</td><td>${(FB.lbs_hr[i]||0).toFixed(1)}</td>`; tb.appendChild(tr); }
+
+  // Save to Reports session locally and show
+  const sess = { timestamp: FB.timestamp, mode: mode, psi_nom: FB.psi_nom, volt_nom: FB.volt_nom, rho: FB.rho,
+                 flow_mL: FB.flow_mL, on_time_s: FB.on_time_s, cc_min: FB.cc_min, lbs_hr: FB.lbs_hr,
+                 telemetry: await (await fetch('/api/telemetry')).json() };
+  if(typeof rep_save_session==='function'){ rep_save_session(sess); rep_render(sess); }
+  ft_next(4);
+  try{ await sys_pump(0);}catch(e){}
+}
+
+async function ft_start(){
+  try{ await sys_pump(1);}catch(e){}
+  if($('ft_prime')?.checked){ const sec=parseInt(($('set_prime_sec')?.value)||'5'); const pulse=( ($('set_prime_pulse')?.value)||'1')==='1'; const ok=await prime_sequence(sec,pulse); if(!ok){ alert('Prime failed — check pump/rail.'); return; } } // (old impl shadowed by new above)
+  await ft_arm_settings();
+  const mode = $('ft_mode').value;
+  const body={mode,params:{hz:parseFloat($('ft_hz').value||'20'),pw_ms:parseFloat($('ft_pw').value||'6'),seconds:parseInt($('ft_secs').value||'10'),mask:parseInt($('ft_mask').value||'255')}};
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const target=parseFloat($('ft_target_ml').value||'0');
+  if(ft_poll) clearInterval(ft_poll);
+  ft_poll=setInterval(async()=>{
+    try{
+      const t=await (await fetch('/api/telemetry')).json();
+      $('ft_v').textContent=t.voltage??'—'; $('ft_p').textContent=t.pressure??'—'; $('ft_t').textContent=t.tempC??'—';
+      const tb=$('ft_scales').querySelector('tbody'); tb.innerHTML='';
+      let m=0, c=0;
+      (t.scales||[]).forEach((v,i)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${(v??0).toFixed(1)}</td>`; tb.appendChild(tr); m+=(v||0); c++; });
+      // balance score (std dev / mean)
+      const mean = c? m/c : 0; let varsum=0; (t.scales||[]).forEach(v=>{ varsum += Math.pow((v||0)-mean,2); }); const std = c? Math.sqrt(varsum/c):0;
+      const bal = (mean>0)? (100*(1 - std/mean)) : 0; $('ft_balance').textContent = isFinite(bal)? (bal.toFixed(1)+'% uniformity') : '—';
+      if(target>0){ let done=true; (t.scales||[]).forEach(v=>{ if((v||0) < target) done=false; }); if(done) await ft_stop(); }
+    }catch(e){}
+  },500);
+}
+
+async function ft_stop(){
+  await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+  if(ft_poll){ clearInterval(ft_poll); ft_poll=null; }
+  // Average runs support: append to results and average if requested
+  const avg_runs=parseInt($('ft_avg_runs').value||'1');
+  let j=await (await fetch('/api/report')).json();
+  const mls=j.flow_mL||[], on=j.on_time_s||[], cc=j.cc_min||[], lb=j.lbs_hr||[];
+  // simplistic averaging: fetch previous cache from window
+  if(!window.ft_accum){ window.ft_accum = {n:0, mls:new Array(8).fill(0), on:new Array(8).fill(0), cc:new Array(8).fill(0), lb:new Array(8).fill(0)}; }
+  const A=window.ft_accum; if(A.n < avg_runs){ A.n++; for(let i=0;i<8;i++){ A.mls[i]+=mls[i]||0; A.on[i]+=on[i]||0; A.cc[i]+=cc[i]||0; A.lb[i]+=lb[i]||0; } }
+  const tb=$('ft_results').querySelector('tbody'); tb.innerHTML='';
+  for(let i=0;i<8;i++){ const tr=document.createElement('tr'); const denom=A.n||1; tr.innerHTML=`<td>${i+1}</td><td>${(A.mls[i]/denom).toFixed(1)}</td><td>${(A.on[i]/denom).toFixed(2)}</td><td>${(A.cc[i]/denom).toFixed(1)}</td><td>${(A.lb[i]/denom).toFixed(1)}</td>`; tb.appendChild(tr); }
+}
+
+// ---- Calibration tab JS ----
+
+// ---- Wi‑Fi status in Settings ----
+async function wifi_refresh(){
+  try{
+    const j = await (await fetch('/api/wifi')).json();
+    const mode = j.mode, ok = j.connected, ssid = j.ssid, ip = j.ip, host = j.host;
+    $('wifi_badge').innerHTML = `<div class="badge">${ok?'Connected:':'Mode:'} ${mode} • SSID: ${ssid} • IP: ${ip} • Host: ${host}.local</div>`;
+  }catch(e){
+    $('wifi_badge').textContent = 'Wi‑Fi status unavailable';
+  }
+}
+async function wifi_reconnect(){
+  await fetch('/api/wifi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+  await new Promise(r=>setTimeout(r,2000));
+  wifi_refresh();
+}
+wifi_refresh();
+
+async function fluid_load(){ try{ const j=await (await fetch('/api/fluid')).json(); $('cal_fluid').value=j.name||'Gasoline'; $('cal_rho_c').value=(j.rho_custom??0.744); $('cal_alpha').value=(j.alpha??0.001);}catch(e){} }
+async function fluid_save(){ await fetch('/api/fluid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('cal_fluid').value, rho_custom:parseFloat($('cal_rho_c').value||'0.744'), alpha:parseFloat($('cal_alpha').value||'0.001')})}); }
+fluid_load();
+async function cal_tare_all(){ await fetch('/api/scales/tare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ch:-1})}); }
+async function cal_span_all(){ const g=parseFloat($('cal_span_g').value||'0'); for(let i=0;i<8;i++){ await fetch('/api/scales/span',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ch:i,mass_g:g})}); } }
+async function cal_save_nominals(){
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({psi_nom:parseFloat($('cal_psi').value),volt_nom:parseFloat($('cal_v').value),fluid:'TestFluid'})});
+  await fetch('/api/calibration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rho:parseFloat($('cal_rho').value)})});
+}
+async function cal_save_sensors(){
+  await fetch('/api/sensors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    v_zero:parseFloat($('cal_vz').value||'0'), v_span:parseFloat($('cal_vs').value||'1'),
+    p_zero:parseFloat($('cal_pz').value||'0'), p_span:parseFloat($('cal_ps').value||'1'),
+    t_zero:parseFloat($('cal_tz').value||'0'), t_span:parseFloat($('cal_ts').value||'1')
+  })});
+}
+
+
+// ---- Reports: session retention + charts ----
+const SESSION_KEY='ib_session_report_v1';
+
+function rep_save_session(obj){
+  try{ localStorage.setItem(SESSION_KEY, JSON.stringify(obj)); }catch(e){}
+}
+function rep_load_session(){
+  try{ const s=localStorage.getItem(SESSION_KEY); return s? JSON.parse(s): null; }catch(e){ return null; }
+}
+function rep_clear(){
+  localStorage.removeItem(SESSION_KEY);
+  $('rep_body').style.display='none';
+  $('rep_meta').textContent='Session cleared.';
+}
+
+function rep_meta_text(j){
+  const dt = new Date(j.timestamp||Date.now());
+  const mode = (j.mode||'flow');
+  const psi = j.psi_nom??'—', v=j.volt_nom??'—', rho=j.rho??'—';
+  return `Captured ${dt.toLocaleString()} • Mode: ${mode} • Nominal: ${psi} psi, ${v} V • ρ=${rho}`;
+}
+
+async function rep_refresh_from_device(){
+  try{
+    const j=await (await fetch('/api/report')).json();
+    const session = {
+      timestamp: Date.now(),
+      mode: j.mode||'flow',
+      psi_nom: j.psi_nom, volt_nom: j.volt_nom, rho: j.rho,
+      flow_mL: j.flow_mL, on_time_s: j.on_time_s, cc_min: j.cc_min, lbs_hr: j.lbs_hr,
+      suite_base_ccmin: j.suite_base_ccmin,
+      suite_p59_ccmin_kpa: j.suite_p59_ccmin_kpa,
+      suite_holley_ccmin_v: j.suite_holley_ccmin_v,
+      suite_p59_offset_ms_v: j.suite_p59_offset_ms_v,
+      spa: j.spa,
+    };
+    rep_save_session(session);
+    rep_render(session);
+  }catch(e){
+    $('rep_meta').textContent='Could not load from device.';
+  }
+}
+
+function rep_print(){ window.print(); }
+
+function rep_download_json(){
+  const j = rep_load_session(); if(!j) return;
+  const blob = new Blob([JSON.stringify(j,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='injectorbench_session.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function rep_download_html(){
+  const j = rep_load_session(); if(!j) return;
+  const html = rep_build_standalone_html(j);
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='injectorbench_session.html'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function rep_build_standalone_html(j){
+  // build a minimal standalone page with inline CSS and simple SVGs baked via the same renderers
+  const css = `body{font-family:Inter,system-ui,Arial;padding:20px;color:#111}
+  .kgrid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px}
+  .k{border:1px solid #ccc;border-radius:12px;padding:12px}
+  .kname{font-size:12px;color:#666}.kval{font-size:20px;font-weight:700;margin-top:4px}
+  .chart{width:100%;height:200px;border:1px solid #eee;border-radius:10px}`;
+  const meta = rep_meta_text(j);
+  const svg1 = rep_chart_svg(j.cc_min||[], 'cc/min');
+  const svg2 = rep_chart_svg(j.lbs_hr||[], 'lb/hr');
+  const svg3 = rep_chart_svg(j.flow_mL||[], 'mL');
+  const svg4 = rep_chart_svg(j.on_time_s||[], 'on(s)');
+  const tbl = rep_table_html(j);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>InjectorBench Report</title><style>${css}
+/* Injector toggles */
+#inj_toggles button{border:1px solid #2a2a36;border-radius:10px;padding:6px 10px;background:#12121a;color:#ccd}
+#inj_toggles button.active{background:#2f4166;color:#fff;border-color:#3e5aa4}
+
+
+/* System visibility chips */
+#sys_vis .chip{border:1px solid #2a2a36;border-radius:12px;padding:6px 10px;background:#12121a;color:#ccd;cursor:pointer;user-select:none}
+#sys_vis .chip.active{outline:2px solid #3e5aa4}
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#9aa;margin:4px 0}
+.legend .dot{width:10px;height:10px;border-radius:50%}
+
+
+/* --- V5 THEME REFRESH --- */
+:root{
+  --bg:#0b0d12; --panel:#121520; --panel-2:#171b26; --ink:#dfe6ff; --muted:#9aa7c7;
+  --accent:#5b7cff; --accent-2:#8b5bff; --warn:#f08a5b; --ok:#6cd4a5; --border:#1f2636;
+}
+body{background:var(--bg); color:var(--ink);}
+.container{max-width:1100px; margin:0 auto; padding:10px 14px;}
+.card{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid var(--border);
+  border-radius:16px; padding:14px; box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.row{gap:10px; align-items:flex-start}
+hr{border:none;border-top:1px solid var(--border);margin:10px 0}
+
+/* Buttons */
+.btn{background:#12192c; border:1px solid #233053; border-radius:12px; color:var(--ink); padding:8px 12px}
+.btn:hover{background:#182342}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.warn{background:#2c1511; border-color:#4a2720; color:#ffb39a}
+
+/* Badges */
+.badge{background:#0e1426; border:1px solid #21315b; color:#cbd6ff; border-radius:10px; padding:4px 8px; display:inline-block}
+
+/* Brand */
+.brand{font-weight:800; letter-spacing:.4px}
+.brand-badge{background:var(--accent-2); color:#fff; padding:3px 8px; border-radius:10px; margin-right:8px}
+
+/* Tabs header (compact, not full-width buttons) */
+.tabbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:10px 0}
+.tabbar .tabbtn{padding:8px 12px; border-radius:12px; border:1px solid var(--border); background:#0f1424; color:#cfe1ff; cursor:pointer}
+.tabbar .tabbtn.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+
+/* Inputs */
+input, select{background:#0e1424; border:1px solid #223154; color:var(--ink); border-radius:10px; padding:7px 9px}
+
+/* Tables */
+table{width:100%; border-collapse:collapse}
+th, td{border-top:1px solid var(--border); padding:8px 10px; text-align:left}
+thead th{border-bottom:1px solid var(--border); color:#c6d2f3}
+tbody tr:hover{background:#0d1322}
+
+/* Charts */
+.chart{background:#0e1420; border:1px solid #1c2437; border-radius:14px; padding:6px}
+
+/* Constrain long rows: avoid edge-to-edge spans the user dislikes */
+.card > .row{flex-wrap:wrap}
+
+</style></head>
+  <body><h2>InjectorBench — Session Report</h2><div>${meta}</div>
+  <h3>Summary</h3><div class="kgrid">${rep_summary_html(j)}</div>
+  <h3>Charts</h3><div class="chart">${svg1}</div><div class="chart">${svg2}</div><div class="chart">${svg3}</div><div class="chart">${svg4}</div>
+  <h3>Raw Table</h3>${tbl}
+  </body></html>`;
+}
+
+function rep_summary_html(j){
+  const cc=j.cc_min||[], lb=j.lbs_hr||[], ml=j.flow_mL||[];
+  const avg = arr=> arr && arr.length? (arr.reduce((a,b)=>a+(b||0),0)/arr.length) : 0;
+  const mean = avg(cc); const std = Math.sqrt((cc.reduce((s,v)=>s+Math.pow((v||0)-mean,2),0)/(cc.length||1))||0);
+  const uniform = (mean>0)? (100*(1-std/mean)) : 0;
+  const totalML = (ml||[]).reduce((a,b)=>a+(b||0),0);
+  const maxDev = Math.max(...cc.map(v=>Math.abs((v||0)-mean)));
+  return [`<div class="k"><div class="kname">Avg cc/min</div><div class="kval">${mean.toFixed(1)}</div></div>`,
+          `<div class="k"><div class="kname">Uniformity</div><div class="kval">${uniform.toFixed(1)}%</div></div>`,
+          `<div class="k"><div class="kname">Total mL</div><div class="kval">${totalML.toFixed(1)}</div></div>`,
+          `<div class="k"><div class="kname">Max Δ from mean</div><div class="kval">${maxDev.toFixed(1)} cc/min</div></div>`].join('');
+}
+
+function rep_table_html(j){
+  const mls=j.flow_mL||[], on=j.on_time_s||[], cc=j.cc_min||[], lb=j.lbs_hr||[];
+  let rows=''; for(let i=0;i<8;i++){ rows += `<tr><td>${i+1}</td><td>${(mls[i]||0).toFixed(1)}</td><td>${(on[i]||0).toFixed(2)}</td><td>${(cc[i]||0).toFixed(1)}</td><td>${(lb[i]||0).toFixed(1)}</td></tr>`; }
+  return `<table border="1" cellspacing="0" cellpadding="6"><thead><tr><th>Inj</th><th>mL</th><th>on(s)</th><th>cc/min</th><th>lb/hr</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function rep_chart_svg(vals, label){
+  const W=560,H=160,pad=24; const maxV=Math.max(1, ...vals.map(v=>v||0));
+  const barW = (W - pad*2) / (vals.length||1);
+  let bars=''; for(let i=0;i<vals.length;i++){ const v=vals[i]||0; const h=(v/maxV)*(H-pad*2); const x=pad+i*barW; const y=H-pad-h;
+    bars += `<rect x="${x+3}" y="${y}" width="${Math.max(4,barW-6)}" height="${h}" rx="4" ry="4" fill="#4b82f2"></rect>`;
+    bars += `<text x="${x+barW/2}" y="${H-6}" font-size="10" text-anchor="middle" fill="#889">${i+1}</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="${W}" height="${H}" fill="none" />
+  <text x="${pad}" y="14" font-size="12" fill="#9aa">${label}</text>${bars}</svg>`;
+}
+
+function rep_render(j){
+  $('rep_meta').textContent = rep_meta_text(j);
+  $('rep_body').style.display='block';
+  // Summary
+  $('rep_summary').innerHTML = rep_summary_html(j);
+  // Uniformity
+  const cc=j.cc_min||[]; const m=cc.reduce((a,b)=>a+(b||0),0)/(cc.length||1);
+  const std=Math.sqrt((cc.reduce((s,v)=>s+Math.pow((v||0)-m,2),0)/(cc.length||1))||0);
+  const uni=(m>0)? (100*(1-std/m)):0; $('rep_uniformity').textContent = isFinite(uni)? uni.toFixed(1)+'%':'—';
+  // Charts
+  $('chart_ccmin').innerHTML = rep_chart_svg(cc,'cc/min');
+  $('chart_lbhr').innerHTML = rep_chart_svg(j.lbs_hr||[],'lb/hr');
+  $('chart_ml').innerHTML   = rep_chart_svg(j.flow_mL||[],'mL');
+  $('chart_on').innerHTML   = rep_chart_svg(j.on_time_s||[],'on(s)');
+  // Telemetry and normalized cc/min insert
+  if(j.telemetry){ const tt=j.telemetry; $('rep_meta').textContent += ` • Telemetry: ${(tt.tempC??'—')}°C, ${(tt.pressure??'—')} psi, ${(tt.voltage??'—')} V`; }
+  if(j.cc_min_norm){ const wrap=document.createElement('div'); wrap.className='row'; wrap.innerHTML=`<div class="card grow"><div class="muted">Normalized cc/min @ nominal ΔP</div><div class="chart" id="chart_ccmin_norm"></div></div>`; $('rep_body').appendChild(wrap); $('chart_ccmin_norm').innerHTML = rep_chart_svg(j.cc_min_norm,'cc/min (normalized)'); }
+  // Raw table
+  const tb=$('rep_table').querySelector('tbody'); tb.innerHTML='';
+  for(let i=0;i<8;i++){ const tr=document.createElement('tr'); const mls=j.flow_mL||[], on=j.on_time_s||[], cc=j.cc_min||[], lb=j.lbs_hr||[];
+    tr.innerHTML=`<td>${i+1}</td><td>${(mls[i]||0).toFixed(1)}</td><td>${(on[i]||0).toFixed(2)}</td><td>${(cc[i]||0).toFixed(1)}</td><td>${(lb[i]||0).toFixed(1)}</td>`; tb.appendChild(tr); }
+  // Characterize tables (if present)
+  const ct=$('rep_char_tables'); ct.innerHTML='';
+  if(j.suite_base_ccmin){ ct.innerHTML += `<div><div class="muted">Base cc/min</div>${rep_chart_svg(j.suite_base_ccmin,'Base cc/min')}</div>`; }
+  if(j.suite_p59_ccmin_kpa){ ct.innerHTML += `<div><div class="muted">P59 IFR vs ΔkPa (row 0)</div>${rep_chart_svg(j.suite_p59_ccmin_kpa[0]||[],'IFR ΔkPa=0')}</div>`; }
+  if(j.suite_p59_offset_ms_v){ ct.innerHTML += `<div><div class="muted">P59 Offset vs Volts</div>${rep_chart_svg(j.suite_p59_offset_ms_v.map(r=>r[0]||0),'Offset(ms)')}</div>`; }
+  if(j.suite_holley_ccmin_v){ ct.innerHTML += `<div><div class="muted">Holley Flow vs Volts (Inj1)</div>${rep_chart_svg(j.suite_holley_ccmin_v.map(r=>r[0]||0),'Holley Flow (inj1)')}</div>`; }
+  if(j.spa && j.spa.bins_ms && j.spa.adder_ms){ const paired=j.spa.bins_ms.map((v,i)=>({x:v,y:j.spa.adder_ms[i]||0}));
+    // simple line as bars
+    ct.innerHTML += `<div><div class="muted">Short Pulse Adder</div>${rep_chart_svg(paired.map(p=>p.y),'SPA(ms)')}</div>`;
+  }
+}
+
+// On page load, try to render last session
+(()=>{ const s=rep_load_session(); if(s){ rep_render(s);} })();
+
+
+
+// ---- CLEAN ----
+let CLQ=[]; let cl_running=false; let cl_stopflag=false;
+
+function cl_safe_ok(){ if(!$('cl_safe').checked){ alert('Confirm safety checkbox first.'); return false; } return true; }
+function cl_status(){ fetch('/api/clean').then(r=>r.json()).then(j=>{ $('cl_progress').textContent = `Pump:${j.pump_on?'ON':'off'} Backflush:${j.backflush_on?'ON':'off'} Remaining:${(j.remaining_ms/1000|0)}s`; }); }
+async function cl_tare_all(){ await fetch('/api/scales/tare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ch:-1})}); }
+
+async function cl_prime(){
+  if(!cl_safe_ok()) return;
+  $('cl_progress').textContent='Priming...';
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz:5,pw_ms:3,seconds:10,mask:parseInt($('cl_mask').value||'255')}})});
+  await new Promise(r=>setTimeout(r,11000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+  $('cl_progress').textContent='Prime done.';
+}
+async function cl_purge(){
+  if(!cl_safe_ok()) return;
+  $('cl_progress').textContent='Purging (static open)...';
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'static',params:{seconds:10,mask:parseInt($('cl_mask').value||'255')}})});
+  await new Promise(r=>setTimeout(r,11000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+  $('cl_progress').textContent='Purge done.';
+}
+async function cl_pulse(){
+  if(!cl_safe_ok()) return;
+  $('cl_progress').textContent='Pulsing...';
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'dynamic',params:{hz:parseFloat($('cl_hz').value||'10'),pw_ms:parseFloat($('cl_pw').value||'4'),seconds:parseInt($('cl_sec').value||'10'),mask:parseInt($('cl_mask').value||'255')}})});
+  await new Promise(r=>setTimeout(r,(parseInt($('cl_sec').value||'10')+1)*1000)); await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+  $('cl_progress').textContent='Pulse done.';
+}
+async function cl_soak(sec){
+  if(!cl_safe_ok()) return;
+  $('cl_progress').textContent='Soaking...';
+  await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:sec, solvent:$('cl_solvent').value})});
+  for(let t=sec; t>=0; t--){ $('cl_progress').textContent=`Soaking... ${t}s remaining`; await new Promise(r=>setTimeout(r,1000)); if(cl_stopflag) break; }
+  $('cl_progress').textContent='Soak done.';
+}
+async function cl_recirc(sec){
+  if(!cl_safe_ok()) return;
+  $('cl_progress').textContent='Recirculating...';
+  await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pump_on:true,seconds:sec, solvent:$('cl_solvent').value})});
+  for(let t=sec; t>=0; t--){ $('cl_progress').textContent=`Recirculating... ${t}s`; await new Promise(r=>setTimeout(r,1000)); if(cl_stopflag) break; }
+  await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pump_on:false})});
+  $('cl_progress').textContent='Recirc done.';
+}
+async function cl_backflush(sec){
+  if(!cl_safe_ok()) return;
+  $('cl_progress').textContent='Backflushing...';
+  await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({backflush_on:true,seconds:sec, mask:parseInt($('cl_mask').value||'255')})});
+  for(let t=sec; t>=0; t--){ $('cl_progress').textContent=`Backflushing... ${t}s`; await new Promise(r=>setTimeout(r,1000)); if(cl_stopflag) break; }
+  await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({backflush_on:false})});
+  $('cl_progress').textContent='Backflush done.';
+}
+
+// Routine builder
+function cl_add(){
+  const type=$('cl_step_type').value;
+  const hz=parseFloat($('cl_hz').value||'10'), pw=parseFloat($('cl_pw').value||'4'), sec=parseInt($('cl_sec').value||'10'), mask=parseInt($('cl_mask').value||'255');
+  CLQ.push({type,hz,pw,sec,mask}); cl_render_queue();
+}
+function cl_clear(){ CLQ=[]; cl_render_queue(); }
+function cl_render_queue(){
+  if(CLQ.length===0){ $('cl_queue').textContent='Queue empty.'; return; }
+  $('cl_queue').innerHTML = CLQ.map((s,i)=> `${i+1}. ${s.type} — ${s.type==='pulse'?'Hz '+s.hz+', PW '+s.pw+'ms, ':''} ${s.sec}s (mask ${s.mask})`).join('<br/>');
+}
+
+async function cl_run(){
+  if(!cl_safe_ok()) return;
+  if(cl_running) return;
+  cl_running=true; cl_stopflag=false; $('cl_progress').textContent='Running queue...';
+  for(let i=0;i<CLQ.length;i++){
+    if(cl_stopflag) break;
+    const s=CLQ[i];
+    if(s.type==='prime'){ await cl_prime(); }
+    else if(s.type==='purge'){ await cl_purge(); }
+    else if(s.type==='pulse'){ $('cl_hz').value=s.hz; $('cl_pw').value=s.pw; $('cl_sec').value=s.sec; await cl_pulse(); }
+    else if(s.type==='soak'){ await cl_soak(s.sec); }
+    else if(s.type==='recirc'){ await cl_recirc(s.sec); }
+    else if(s.type==='backflush'){ await cl_backflush(s.sec); }
+  }
+  $('cl_progress').textContent='Queue finished.'; cl_running=false;
+}
+async function cl_stop(){ cl_stopflag=true; await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){}; await fetch('/api/clean',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pump_on:false, backflush_on:false})}); }
+
+
+// ---- Injector selection toggles ----
+function inj_build(){
+  const wrap=$('inj_toggles'); wrap.innerHTML='';
+  for(let i=0;i<8;i++){
+    const b=document.createElement('button'); b.textContent= (i+1); b.onclick=()=>{ b.classList.toggle('active'); inj_sync_mask(); };
+    b.id='inj_btn_'+i; b.className=''; wrap.appendChild(b);
+  }
+  // default all on
+  inj_all();
+}
+function inj_mask(){
+  let m=0; for(let i=0;i<8;i++){ if($('inj_btn_'+i).classList.contains('active')) m |= (1<<i); }
+  return m;
+}
+function inj_all(){ for(let i=0;i<8;i++){ $('inj_btn_'+i).classList.add('active'); } inj_sync_mask(); }
+function inj_none(){ for(let i=0;i<8;i++){ $('inj_btn_'+i).classList.remove('active'); } inj_sync_mask(); }
+function inj_sync_mask(){
+  // Flow Bench mask input (if present)
+  if($('ft_mask')) $('ft_mask').value = inj_mask();
+  // Clean tab mask input (if present)
+  if($('cl_mask')) $('cl_mask').value = inj_mask();
+}
+// init on load
+inj_build();
+
+
+async function ft_purge(){
+  await ft_arm_settings();
+  const seconds = parseInt($('ft_secs').value||'10');
+  const mask = inj_mask();
+  await char_start_onehot(,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'static',params:{seconds,mask}})});
+  // let it run for seconds+1 then stop (unless user clicks Stop)
+  setTimeout(async()=>{ await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){}; try{await sys_pump(0);}catch(e){} }, (seconds+1)*1000);
+}
+
+
+// ---- System (Live Telemetry) ----
+let sys_timer=null;
+let sys_data = {t:[], v:[], p:[], tc:[]};
+
+function sys_start(){
+  sys_stop();
+  const ivl = parseInt($('sys_ivl').value||'500');
+  sys_timer = setInterval(sys_tick, Math.max(100, ivl));
+}
+function sys_stop(){ if(sys_timer){ clearInterval(sys_timer); sys_timer=null; } }
+function sys_clear(){ sys_data = {t:[], v:[], p:[], tc:[]}; sys_render(); }
+
+async function sys_tick(){
+  try{
+    const j = await (await fetch('/api/telemetry')).json();
+    const now = Date.now();
+    sys_push(now, j.voltage, j.pressure, j.tempC);
+    sys_render();
+  }catch(e){ /* ignore */ }
+}
+function sys_push(ts, v, p, tc){
+  const maxpts = parseInt($('sys_pts').value||'240');
+  sys_data.t.push(ts);
+  sys_data.v.push(typeof v==='number'? v : null);
+  sys_data.p.push(typeof p==='number'? p : null);
+  sys_data.tc.push(typeof tc==='number'? tc : null);
+  for(const k of ['t','v','p','tc']){ if(sys_data[k].length>maxpts){ sys_data[k].shift(); } }
+}
+function sys_smooth_arr(arr, n){
+  n = Math.max(1, parseInt($('sys_smooth').value||'1'));
+  if(n<=1) return arr.slice();
+  const out=[]; for(let i=0;i<arr.length;i++){ let s=0,c=0; for(let k=Math.max(0,i-n+1); k<=i; k++){ const v=arr[k]; if(typeof v==='number'){ s+=v; c++; } } out.push(c? s/c : null); }
+  return out;
+}
+function sys_render(){
+  const t = sys_data.t;
+  const v = sys_smooth_arr(sys_data.v);
+  const p = sys_smooth_arr(sys_data.p);
+  const tc= sys_smooth_arr(sys_data.tc);
+  $('sys_chart_v').innerHTML = line_svg(t, v, 'V');
+  $('sys_chart_p').innerHTML = line_svg(t, p, 'psi');
+  $('sys_chart_t').innerHTML = line_svg(t, tc,'°C');
+  const latest = (i)=> i.length? i[i.length-1] : null;
+  $('sys_snap').innerHTML = [
+    cardK('Voltage', latest(v), 'V'),
+    cardK('Pressure', latest(p), 'psi'),
+    cardK('Temp', latest(tc), '°C'),
+    cardK('Points', t.length, '')
+  ].join('');
+}
+function cardK(name, val, unit){ const s = (val==null||isNaN(val))?'—': (typeof val==='number'? val.toFixed(2):val); return `<div class="k"><div class="kname">${name}</div><div class="kval">${s}${unit? ' '+unit:''}</div></div>`; }
+
+function line_svg(ts, vals, unit){
+  const W=560,H=160,pad=28; const n=vals.length;
+  if(n===0) return `<svg viewBox="0 0 ${W} ${H}"></svg>`;
+  const minV = Math.min(...vals.filter(x=>typeof x==='number'));
+  const maxV = Math.max(...vals.filter(x=>typeof x==='number'));
+  const lo = isFinite(minV)? minV : 0, hi = isFinite(maxV)? maxV : 1;
+  const rng = (hi-lo) || 1;
+  const t0 = ts[0]||0, t1 = ts[ts.length-1]||1, trng = (t1-t0)||1;
+  let d = '';
+  for(let i=0;i<n;i++){
+    const v=vals[i];
+    if(typeof v!=='number') continue;
+    const x = pad + ( (ts[i]-t0)/trng ) * (W - 2*pad);
+    const y = H-pad - ((v - lo)/rng)*(H - 2*pad);
+    d += (d==''? 'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+  }
+  // axes text
+  const y0 = (H - pad).toFixed(1), x0 = pad.toFixed(1);
+  const lbl = `${lo.toFixed(2)} – ${hi.toFixed(2)} ${unit}`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="none"/>
+    <path d="${d}" fill="none" stroke="#4b82f2" stroke-width="2" />
+    <text x="${x0}" y="16" font-size="12" fill="#9aa">${lbl}</text>
+  </svg>`;
+}
+
+function sys_csv(){
+  const rows = ['timestamp_ms,voltage,pressure,tempC'];
+  for(let i=0;i<sys_data.t.length;i++){
+    rows.push([sys_data.t[i], sys_data.v[i]??'', sys_data.p[i]??'', sys_data.tc[i]??''].join(','));
+  }
+  const blob = new Blob([rows.join('\\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download = 'injectorbench_system_telemetry.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+
+// ---- System (Live Telemetry) v2 ----
+let sys_timer=null;
+let sys_data = {t:[], v:[], p:[], tc:[], s:[[],[],[],[],[],[],[],[]]};
+let sys_vis = {v:true, p:true, t:true, s:[true,true,true,true,true,true,true,true]};
+const SYS_COLORS = {
+  v:'#4b82f2', p:'#e26d5c', t:'#f2b84b',
+  s:['#6ab04c','#22a6b3','#be2edd','#f0932b','#eb4d4b','#7ed6df','#badc58','#e056fd']
+};
+function sys_build_vis(){
+  const wrap=$('sys_vis'); wrap.innerHTML='';
+  const mk=(key,label,idx=null)=>{
+    const el=document.createElement('div'); el.className='chip active';
+    el.dataset.key=key; if(idx!=null) el.dataset.idx=idx;
+    el.innerHTML = `<span class="dot" style="background:${idx!=null?SYS_COLORS.s[idx]:SYS_COLORS[key]}"></span> ${label}`;
+    el.onclick=()=>{
+      if(idx==null){ sys_vis[key]=!sys_vis[key]; el.classList.toggle('active', sys_vis[key]); }
+      else{ sys_vis.s[idx]=!sys_vis.s[idx]; el.classList.toggle('active', sys_vis.s[idx]); }
+      sys_render();
+    };
+    wrap.appendChild(el);
+  };
+  mk('v','Voltage (V)'); mk('p','Pressure (psi)'); mk('t','Temp (°C)');
+  for(let i=0;i<8;i++) mk('s',`Scale ${i+1}`,i);
+}
+sys_build_vis();
+
+function sys_start(){
+  sys_stop();
+  const ivl = parseInt($('sys_ivl').value||'500');
+  sys_timer = setInterval(sys_tick, Math.max(100, ivl));
+}
+function sys_stop(){ if(sys_timer){ clearInterval(sys_timer); sys_timer=null; } }
+function sys_clear(){ sys_data = {t:[], v:[], p:[], tc:[], s:[[],[],[],[],[],[],[],[]]}; sys_render(); }
+
+async function sys_tick(){
+  try{
+    const j = await (await fetch('/api/telemetry')).json();
+    const now = Date.now();
+    const scales = (j.scales && Array.isArray(j.scales))? j.scales : new Array(8).fill(null);
+    sys_push(now, j.voltage, j.pressure, j.tempC, scales);
+    sys_render();
+  }catch(e){ /* ignore */ }
+}
+function sys_push(ts, v, p, tc, scales){
+  const maxpts = parseInt($('sys_pts').value||'240');
+  sys_data.t.push(ts);
+  sys_data.v.push(typeof v==='number'? v : null);
+  sys_data.p.push(typeof p==='number'? p : null);
+  sys_data.tc.push(typeof tc==='number'? tc : null);
+  for(let i=0;i<8;i++){ sys_data.s[i].push(typeof scales[i]==='number'? scales[i] : null); }
+  // trim
+  const trim = (arr)=>{ while(arr.length>maxpts) arr.shift(); };
+  trim(sys_data.t); trim(sys_data.v); trim(sys_data.p); trim(sys_data.tc);
+  for(let i=0;i<8;i++) trim(sys_data.s[i]);
+}
+function sys_smooth_arr(arr, n){
+  n = Math.max(1, parseInt($('sys_smooth').value||'1'));
+  if(n<=1) return arr.slice();
+  const out=[]; for(let i=0;i<arr.length;i++){ let s=0,c=0; for(let k=Math.max(0,i-n+1); k<=i; k++){ const v=arr[k]; if(typeof v==='number'){ s+=v; c++; } } out.push(c? s/c : null); }
+  return out;
+}
+function compute_range(vals, yminId, ymaxId){
+  const manualMin = parseFloat($(yminId).value);
+  const manualMax = parseFloat($(ymaxId).value);
+  const hasManual = !isNaN(manualMin) && !isNaN(manualMax);
+  if(hasManual) return [manualMin, manualMax];
+  const flat = vals.flat? vals.flat(): vals.reduce((a,b)=>a.concat(b),[]);
+  const filtered = flat.filter(x=>typeof x==='number');
+  const lo = filtered.length? Math.min(...filtered):0;
+  const hi = filtered.length? Math.max(...filtered):1;
+  const pad = (hi-lo)*0.05 || 0.5;
+  return [lo-pad, hi+pad];
+}
+function sys_set_auto(axis){
+  if(axis==='v'){ $('rng_v_min').value=''; $('rng_v_max').value=''; }
+  if(axis==='p'){ $('rng_p_min').value=''; $('rng_p_max').value=''; }
+  if(axis==='t'){ $('rng_t_min').value=''; $('rng_t_max').value=''; }
+  if(axis==='s'){ $('rng_s_min').value=''; $('rng_s_max').value=''; }
+  sys_render();
+}
+
+function line_svg_multi(ts, series, colors, unit, yminId, ymaxId){
+  const W=700,H=200,pad=28;
+  const [lo,hi]=compute_range(series, yminId, ymaxId);
+  const rng = (hi-lo) || 1;
+  const t0 = ts[0]||0, t1 = ts[ts.length-1]||1, trng = (t1-t0)||1;
+  let paths='';
+  series.forEach((vals, idx)=>{
+    if(!vals) return;
+    let d=''; for(let i=0;i<vals.length;i++){
+      const v=vals[i]; if(typeof v!=='number') continue;
+      const x = pad + ( (ts[i]-t0)/trng ) * (W - 2*pad);
+      const y = H-pad - ((v - lo)/rng)*(H - 2*pad);
+      d += (d==''? 'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+    }
+    if(d) paths += `<path d="${d}" fill="none" stroke="${colors[idx]}" stroke-width="2" />`;
+  });
+  const lbl = `${lo.toFixed(2)} – ${hi.toFixed(2)} ${unit}`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="none"/>
+    ${paths}
+    <text x="${pad}" y="16" font-size="12" fill="#9aa">${lbl}</text>
+  </svg>`;
+}
+
+function sys_render(){
+  const t = sys_data.t;
+  // Prepare visible series
+  const V = sys_vis.v ? [sys_smooth_arr(sys_data.v)] : [];
+  const P = sys_vis.p ? [sys_smooth_arr(sys_data.p)] : [];
+  const T = sys_vis.t ? [sys_smooth_arr(sys_data.tc)] : [];
+  const S = []; const Scols=[];
+  for(let i=0;i<8;i++){ if(sys_vis.s[i]){ S.push(sys_smooth_arr(sys_data.s[i])); Scols.push(SYS_COLORS.s[i]); } }
+  $('sys_chart_v').innerHTML = line_svg_multi(t, V, [SYS_COLORS.v], 'V', 'rng_v_min', 'rng_v_max');
+  $('sys_chart_p').innerHTML = line_svg_multi(t, P, [SYS_COLORS.p], 'psi', 'rng_p_min', 'rng_p_max');
+  $('sys_chart_t').innerHTML = line_svg_multi(t, T, [SYS_COLORS.t], '°C', 'rng_t_min', 'rng_t_max');
+  $('sys_chart_s').innerHTML = line_svg_multi(t, S, Scols, 'mL', 'rng_s_min', 'rng_s_max');
+
+  const latest = (arr)=> (arr.length && typeof arr[arr.length-1]==='number')? arr[arr.length-1]: null;
+  $('sys_snap').innerHTML = [
+    cardK('Voltage', latest(sys_data.v), 'V'),
+    cardK('Pressure', latest(sys_data.p), 'psi'),
+    cardK('Temp', latest(sys_data.tc), '°C'),
+    ...Array.from({length:8}, (_,i)=> cardK('Scale '+(i+1), latest(sys_data.s[i]), 'mL')),
+    cardK('Points', t.length, '')
+  ].join('');
+}
+function cardK(name, val, unit){ const s = (val==null||isNaN(val))?'—': (typeof val==='number'? val.toFixed(2):val); return `<div class="k"><div class="kname">${name}</div><div class="kval">${s}${unit? ' '+unit:''}</div></div>`; }
+
+function sys_csv(){
+  const rows = ['timestamp_ms,voltage,pressure,tempC,scale1,scale2,scale3,scale4,scale5,scale6,scale7,scale8'];
+  for(let i=0;i<sys_data.t.length;i++){
+    rows.push([
+      sys_data.t[i],
+      sys_data.v[i]??'',
+      sys_data.p[i]??'',
+      sys_data.tc[i]??'',
+      sys_data.s[0][i]??'',
+      sys_data.s[1][i]??'',
+      sys_data.s[2][i]??'',
+      sys_data.s[3][i]??'',
+      sys_data.s[4][i]??'',
+      sys_data.s[5][i]??'',
+      sys_data.s[6][i]??'',
+      sys_data.s[7][i]??''
+    ].join(','));
+  }
+  const blob = new Blob([rows.join('\\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download = 'injectorbench_full_telemetry.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// initialize charts immediately
+sys_render();
+
+
+// ---- V5 top tabbar ----
+const TABS = [
+  {id:'flow', label:'Flow Bench'},
+  {id:'char', label:'Characterize'},
+  {id:'clean', label:'Clean'},
+  {id:'cal', label:'Calibration'},
+  {id:'system', label:'System'},
+  {id:'reports', label:'Reports'},
+  {id:'settings', label:'Settings'}
+];
+function build_tabbar(){
+  const host = $('top_tabs'); if(!host) return;
+  host.innerHTML='';
+  TABS.forEach(t=>{
+    const b = document.createElement('button');
+    b.className='tabbtn';
+    b.textContent=t.label;
+    b.onclick=()=>showTab(t.id);
+    b.id='tabbtn_'+t.id;
+    host.appendChild(b);
+  });
+  mark_active_tab();
+}
+function mark_active_tab(){
+  const active = document.querySelector('.tab.active');
+  TABS.forEach(t=>{
+    const b=$('tabbtn_'+t.id);
+    if(!b) return;
+    b.classList.toggle('active', !!active && active.id==='tab_'+t.id);
+  });
+}
+// Hook existing showTab to update header
+const _showTab = window.showTab;
+window.showTab = (id)=>{ _showTab(id); mark_active_tab(); };
+build_tabbar(); mark_active_tab();
+
+
+// ---- Pump API helpers ----
+async function sys_pump_refresh(){
+  try{ const j=await (await fetch('/api/pump')).json(); $('sys_pump_badge').textContent = 'Pump: ' + (j.state? 'ON':'OFF'); }catch(e){ $('sys_pump_badge').textContent='Pump: ?'; }
+}
+async function sys_pump(state){
+  await fetch('/api/pump',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:state?1:0})});
+  await new Promise(r=>setTimeout(r,200)); sys_pump_refresh();
+}
+// refresh on entering System tab as well
+sys_pump_refresh();
+
+
+// ---- Prime helpers (V5.2) ----
+async function pressure_ok(threshold){
+  try{ const t = await (await fetch('/api/telemetry')).json(); return (typeof t.pressure==='number') && (t.pressure >= threshold); }catch(e){ return false; }
+}
+async function wait_pressure_recover(nom, guard, timeout_ms=12000){
+  const thr = Math.max(0, (parseFloat(nom)||58) - (parseFloat(guard)||5));
+  const t0 = Date.now();
+  while(Date.now()-t0 < timeout_ms){
+    if(await pressure_ok(thr)) return true;
+    await new Promise(r=>setTimeout(r,250));
+  }
+  return false;
+}
+async function prime_sequence(seconds, pulse){
+  // Pump ON
+  try{ await sys_pump(1);}catch(e){}
+  const nom = parseFloat($('ft_psi')?.value || '58');
+  const guard = parseFloat($('ft_psi_tol')?.value || '5');
+  const end = Date.now() + (parseInt(seconds)||0)*1000;
+  $('char_status')?.replaceChildren(document.createTextNode('Priming…'));
+  // Optional purge pulses: one-hot short dynamic blips across selected injectors
+  while(Date.now() < end){
+    if(pulse){
+      const inj = selectedInjectors();
+      for(const i of inj){
+        const mask = (1<<i);
+        // 10 Hz, 2 ms, 0.2 s burst per injector
+        await fetch('/api/characterize/start',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({mode:'dynamic',params:{hz:10,pw_ms:2,seconds:0.2,mask}})});
+        await new Promise(r=>setTimeout(r,250));
+        await fetch('/api/characterize/stop',{method:'POST'}); try{await sys_pump(0);}catch(e){};
+      }
+    }else{
+      await new Promise(r=>setTimeout(r,200));
+    }
+  }
+  const ok = await wait_pressure_recover(nom, guard, 10000);
+  return ok;
+}
+
+// ---- Logs ----
+
+async function load_logs(){
+  const j=await (await fetch('/api/logs')).json();
+  const ul=$('log_list'); ul.innerHTML='';
+  (j.files||[]).forEach(n=>{ const li=document.createElement('li'); li.textContent=n; ul.appendChild(li); });
+}
+</script>
+</body></html>
